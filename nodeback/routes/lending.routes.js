@@ -3,47 +3,47 @@ const router = express.Router();
 const fs = require("fs");
 const path = require("path");
 
-router.get("/", (req, res) => {
+router.get("/", async (req, res, next) => {
     //...
 });
 
-router.get("/:id", (req, res) => {
+router.get("/:id", async (req, res, next) => {
     //...
 });
 
-router.get("/user", (req, res) => {
+router.get("/user", async (req, res, next) => {
     //...
 });
 
-router.get("/available", (req, res) => {
+router.get("/available", async (req, res, next) => {
     //...
 });
 
-router.get("/unavailable", (req, res) => {
+router.get("/unavailable", async (req, res, next) => {
     //...
 });
 
-router.get("/pending", (req, res) => {
+router.get("/pending", async (req, res, next) => {
     //...
 });
 
-router.post("/:did", (req, res) => {
+router.post("/:did", async (req, res, next) => {
     //...
 });
 
-router.put("/accept/:id", (req, res) => {
+router.put("/accept/:id", async (req, res, next) => {
     //...
 });
 
-router.put("/decline/:id", (req, res) => {
+router.put("/decline/:id", async (req, res, next) => {
     //...
 });
 
-router.put("/cancel/:id", (req, res) => {
+router.put("/cancel/:id", async (req, res, next) => {
     //...
 });
 
-router.put("/return/:id", (req, res) => {
+router.put("/return/:id", async (req, res, next) => {
     //...
 });
 

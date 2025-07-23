@@ -3,23 +3,23 @@ const router = express.Router();
 const fs = require("fs");
 const path = require("path");
 
-router.get("/", (req, res) => {
+router.get("/", async (req, res, next) => {
     //...
 });
 
-router.get("/:id", (req, res) => {
+router.get("/:id", async (req, res, next) => {
     //...
 });
 
-router.get("/user", (req, res) => {
+router.get("/user", async (req, res, next) => {
     //...
 });
 
-router.post("/:did", (req, res) => {
+router.post("/:did", async (req, res, next) => {
     //...
 });
 
-router.put("/cancel/:id", (req, res) => {
+router.put("/cancel/:id", async (req, res, next) => {
     //...
 });
 

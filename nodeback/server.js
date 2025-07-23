@@ -1,10 +1,21 @@
-const express = require('express');
+const express = require("express");
+const session = require("express-session")
 const app = express();
 const errorHandler = require("./errorHandler");
 const logHandler = require("./logHandler");
 const PORT = 1000;
 
 app.use(express.json());
+app.use(session({
+    secret: "ein langfristig geheimer string", //muss ersetzt werden durch env datei
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        secure: false,
+        httpOnly: true,
+        maxAge: 1000 * 60 * 60,
+    }
+}));
 app.use(logHandler);
 
 const userRoutes = require("./routes/user.routes");

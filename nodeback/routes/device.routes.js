@@ -3,30 +3,146 @@ const router = express.Router();
 const fs = require("fs/promises");
 const path = require("path");
 
-router.get("/", async (req, res, next) => {
+const dataFilePath = path.join(__dirname, "..", "data", "devices.json");
+
+function requireLogin(req, res, next) {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: "Nicht eingeloggt" });
+  }
+  next();
+}
+
+function requireModerator(req, res, next) {
+  if (req.session.role !== 1) {
+    return res.status(403).json({ error: "Keine Berechtigung" });
+  }
+  next();
+}
+
+function isValidDevice(nD) {
+    const isValidDate = (d) => !isNaN(new Date(d).getTime());
+    const allowedStatus = ["verfügbar", "nicht verfügbar", "reserviert", "ausgeliehen"];
+    const allowedType = ["usb", "laptop", "beamer", "pointer", "headset", "sonstiges"]
+
+    if (
+        typeof nD.name !== "string" || nD.name.trim().length <= 3 ||
+        typeof nD.typ !== "string" || !allowedType.includes(nD.typ.toLowerCase()) ||
+        typeof nD.hersteller !== "string" ||
+        typeof nD.modell !== "string" ||
+        typeof nD.standort !== "string" ||
+        typeof nD.defekt !== "boolean" ||
+        typeof nD.status !== "string" || !allowedStatus.includes(nD.status.toLowerCase()) ||
+        typeof nD.abgeschrieben !== "boolean" ||
+        !isValidDate(nD.anschaffungsdatum) || !isValidDate(nD.abschreibedatum) ||
+        new Date(nD.abschreibedatum) < new Date(nD.anschaffungsdatum) ||
+        typeof nD.erstelltVon !== "number" ||
+        !isValidDate(nD.erstelltAm) ||
+        !isValidDate(nD.zuletztBearbeitet) ||
+        (nD.zugewiesen_an !== null && typeof nD.zugewiesen_an !== "number")
+    ) {
+        return false;
+    }
+    return true;
+}
+
+router.get("/", requireLogin, async (req, res, next) => {
     try {
-        const data = await fs.readFile("./data/devices.json", "utf-8");
+        const data = await fs.readFile(dataFilePath, "utf-8");
         const devices = JSON.parse(data);
         res.status(200).json(devices);
-    } catch(err) {
+        return;
+    } catch (err) {
         next(err);
     }
 });
 
-router.get("/:id", (req, res) => {
-    //...
+router.get("/:id", requireLogin, async (req, res, next) => {
+    try {
+        const id = Number(req.params.id);
+        const data = await fs.readFile(dataFilePath, "utf-8");
+        const devices = JSON.parse(data);
+        const device = devices.find(d => d.id === id);
+        if (device === undefined) {
+            res.status(404).send({ error: "Gerät nicht gefunden" });
+            return;
+        }
+        res.status(200).json(device);
+        return;
+    } catch (err) {
+        next(err);
+    }
 });
 
-router.post("/", (req, res) => {
-    //...
+router.post("/", requireLogin, requireModerator, async (req, res, next) => {
+    try {
+        const data = await fs.readFile(dataFilePath, "utf-8");
+        const devices = JSON.parse(data);
+        const nD = req.body;
+        if (!isValidDevice(nD)) {
+            res.status(400).send({ error: "Ungültige oder unvollständige POST-Anfrage" })
+            return;
+        }
+        let id = 1;
+        if (devices.length >= 1) {
+            id = devices[devices.length - 1].id + 1;
+        }
+        nD.erstelltAm = new Date().toISOString();
+        nD.erstelltVon = req.session.userId;
+        nD.zuletztBearbeitet = nD.erstelltAm;
+        nD.id = id;
+        devices.push(nD);
+        await fs.writeFile(dataFilePath, JSON.stringify(devices, null, 2), "utf-8");
+        res.status(201).json(nD);
+        return;
+    } catch (err) {
+        next(err);
+    }
 });
 
-router.put("/:id", (req, res) => {
-    //...
+router.put("/:id", requireLogin, requireModerator, async (req, res, next) => {
+    try {
+        const data = await fs.readFile(dataFilePath, "utf-8");
+        const devices = JSON.parse(data);
+        const uD = req.body;
+        if (!isValidDevice(uD)) {
+            res.status(400).send({ error: "Ungültige oder unvollständige PUT-Anfrage" });
+            return;
+        }
+        const index = devices.findIndex(d => d.id === Number(req.params.id));
+        if (index === -1) {
+            res.status(404).send({ error: "Gerät nicht gefunden" });
+            return;
+        }
+        const oD = devices[index];
+        devices[index] = uD;
+        devices[index].id = Number(req.params.id);
+        devices[index].erstelltVon = oD.erstelltVon;
+        devices[index].erstelltAm = oD.erstelltAm;
+        devices[index].zuletztBearbeitet = new Date().toISOString();
+        await fs.writeFile(dataFilePath, JSON.stringify(devices, null, 2), "utf-8");
+        res.status(200).json(devices[index]);
+        return;
+    } catch (err) {
+        next(err);
+    }
 });
 
-router.delete("/:id", (req, res) => {
-    //...
+router.delete("/:id", requireLogin, requireModerator, async (req, res, next) => {
+    try {
+        const data = await fs.readFile(dataFilePath, "utf-8");
+        const devices = JSON.parse(data);
+        const index = devices.findIndex(d => d.id === Number(req.params.id));
+        if (index === -1) {
+            res.status(404).send({ error: "Gerät nicht gefunden" });
+            return;
+        }
+        const dD = devices.splice(index, 1)[0];
+        await fs.writeFile(dataFilePath, JSON.stringify(devices, null, 2), "utf-8");
+        res.status(200).json(dD);
+        return;
+    } catch (err) {
+        next(err);
+    }
 });
 
 module.exports = router;
