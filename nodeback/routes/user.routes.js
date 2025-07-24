@@ -3,24 +3,9 @@ const router = express.Router();
 const fs = require("fs/promises");
 const path = require("path");
 const bcrypt = require("bcrypt");
+const { requireLogin, requireModerator } = require("../actionHandler");
 
 const dataFilePath = path.join(__dirname, "..", "data", "users.json");
-
-function requireLogin(req, res, next) {
-    if (!req.session.userId) {
-        res.status(401).json({ error: "Nicht eingeloggt" });
-        return;
-    }
-    next();
-}
-
-function requireModerator(req, res, next) {
-    if (req.session.role !== 1) {
-        res.status(403).json({ error: "Keine Berechtigung" });
-        return;
-    }
-    next();
-}
 
 function isValidUser(uS) {
     const isValidDate = (d) => !isNaN(new Date(d).getTime());

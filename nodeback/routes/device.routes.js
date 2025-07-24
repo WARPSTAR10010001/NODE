@@ -2,26 +2,13 @@ const express = require("express");
 const router = express.Router();
 const fs = require("fs/promises");
 const path = require("path");
+const { requireLogin, requireModerator } = require("../actionHandler");
 
 const dataFilePath = path.join(__dirname, "..", "data", "devices.json");
 
-function requireLogin(req, res, next) {
-  if (!req.session.userId) {
-    return res.status(401).json({ error: "Nicht eingeloggt" });
-  }
-  next();
-}
-
-function requireModerator(req, res, next) {
-  if (req.session.role !== 1) {
-    return res.status(403).json({ error: "Keine Berechtigung" });
-  }
-  next();
-}
-
 function isValidDevice(nD) {
     const isValidDate = (d) => !isNaN(new Date(d).getTime());
-    const allowedStatus = ["verfügbar", "nicht verfügbar", "reserviert", "ausgeliehen"];
+    const allowedStatus = ["verfügbar", "nicht verfügbar", "reserviert", "ausgeliehen", "vergeben"];
     const allowedType = ["usb", "laptop", "beamer", "pointer", "headset", "sonstiges"]
 
     if (
@@ -67,6 +54,38 @@ router.get("/:id", requireLogin, async (req, res, next) => {
             return;
         }
         res.status(200).json(device);
+        return;
+    } catch (err) {
+        next(err);
+    }
+});
+
+router.get("/available", async (req, res, next) => {
+    try {
+        const data = await fs.readFile(dataFilePath, "utf-8");
+        const devices = JSON.parse(data);
+        const availableDevices = devices.filter(d => d.status === "verfügbar");
+        if(availableDevices === undefined) {
+            res.status(404).send({ error: "Keine verfügbaren Geräte gefunden" });
+            return;
+        }
+        res.status(200).json(availableDevices);
+        return;
+    } catch (err) {
+        next(err);
+    }
+});
+
+router.get("/unavailable", async (req, res, next) => {
+    try {
+        const data = await fs.readFile(dataFilePath, "utf-8");
+        const devices = JSON.parse(data);
+        const unavailableDevices = devices.filter(d => d.status === ("nicht verfügbar" || "reserviert" || "ausgeliehen"));
+        if(unavailableDevices === undefined) {
+            res.status(404).send({ error: "Keine unverfügbaren Geräte gefunden" });
+            return;
+        }
+        res.status(200).json(unavailableDevices);
         return;
     } catch (err) {
         next(err);

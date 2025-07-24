@@ -1,7 +1,8 @@
 const express = require("express");
 const router = express.Router();
-const fs = require("fs");
+const fs = require("fs/promises");
 const path = require("path");
+const { requireLogin, requireModerator } = require("../actionHandler");
 
 router.get("/", async (req, res, next) => {
     //...
