@@ -7,15 +7,14 @@ const { requireLogin, requireModerator } = require("../actionHandler");
 
 const dataFilePath = path.join(__dirname, "..", "data", "users.json");
 
-function isValidUser(uS) {
+function isValidUser(user) {
     const isValidDate = (d) => !isNaN(new Date(d).getTime());
-
     if (
-        typeof uS.name !== "string" || uS.name.trim().length <= 3 ||
-        typeof uS.rolle !== "number" || uS.rolle > 1 || uS.rolle < 0 ||
-        typeof uS.passwortHash !== "string" ||
-        !isValidDate(uS.letzterLogin) ||
-        typeof uS.freigeschaltet !== "boolean"
+        typeof user.name !== "string" || user.name.trim().length <= 3 ||
+        typeof user.rolle !== "number" || user.rolle > 1 || user.rolle < 0 ||
+        typeof user.passwortHash !== "string" ||
+        !isValidDate(user.letzterLogin) ||
+        typeof user.freigeschaltet !== "boolean"
     ) {
         return false;
     }
@@ -207,9 +206,11 @@ router.put("/:id", requireLogin, requireModerator, async (req, res, next) => {
         }
         const oU = users[index];
         users[index] = uU;
-        users[index].id = oU.id;
-        users[index].erstelltAm = oU.erstelltAm;
-        users[index].letzterLogin = oU.letzterLogin;
+        users[index] = {
+            id: oU.id,
+            erstelltAm: oU.erstelltAm,
+            letzterLogin: oU.letzterLogin
+        };
         await fs.writeFile(dataFilePath, JSON.stringify(users, null, 2), "utf-8");
         res.status(200).json(users[index]);
         return;
