@@ -64,7 +64,7 @@ router.get("/available", async (req, res, next) => {
         const data = await fs.readFile(dataFilePath, "utf-8");
         const devices = JSON.parse(data);
         const availableDevices = devices.filter(d => d.status === "verfügbar");
-        if(availableDevices === undefined) {
+        if (availableDevices === undefined) {
             res.status(404).send({ error: "Keine verfügbaren Geräte gefunden" });
             return;
         }
@@ -80,7 +80,7 @@ router.get("/unavailable", async (req, res, next) => {
         const data = await fs.readFile(dataFilePath, "utf-8");
         const devices = JSON.parse(data);
         const unavailableDevices = devices.filter(d => d.status === ("nicht verfügbar" || "reserviert" || "ausgeliehen"));
-        if(unavailableDevices === undefined) {
+        if (unavailableDevices === undefined) {
             res.status(404).send({ error: "Keine unverfügbaren Geräte gefunden" });
             return;
         }

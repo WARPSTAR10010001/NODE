@@ -118,8 +118,8 @@ router.put("/accept/:id", requireLogin, requireModerator, async (req, res, next)
         const data = await fs.readFile(dataFilePath, "utf-8");
         const lendings = JSON.parse(data);
         const index = lendings.findIndex(l => l.id === Number(req.params.id));
-        if(index === -1){
-            res.status(404).send({ error: "Ausleihe nicht gefunden"});
+        if (index === -1) {
+            res.status(404).send({ error: "Ausleihe nicht gefunden" });
             return;
         }
         lendings[index].freigeschaltet = true;
@@ -127,7 +127,7 @@ router.put("/accept/:id", requireLogin, requireModerator, async (req, res, next)
         await fs.writeFile(dataFilePath, JSON.stringify(lendings, null, 2), "utf-8");
         res.status(200).json(lendings[index]);
         return;
-    } catch(err) {
+    } catch (err) {
         next(err);
     }
 });
@@ -137,15 +137,15 @@ router.put("/decline/:id", requireLogin, requireModerator, async (req, res, next
         const data = await fs.readFile(dataFilePath, "utf-8");
         const lendings = JSON.parse(data);
         const index = lendings.findIndex(l => l.id === Number(req.params.id));
-        if(index === -1){
-            res.status(404).send({ error: "Ausleihe nicht gefunden"});
+        if (index === -1) {
+            res.status(404).send({ error: "Ausleihe nicht gefunden" });
             return;
         }
         lendings[index].status = "abgelehnt";
         await fs.writeFile(dataFilePath, JSON.stringify(lendings, null, 2), "utf-8");
         res.status(200).json(lendings[index]);
         return;
-    } catch(err) {
+    } catch (err) {
         next(err);
     }
 });
@@ -155,19 +155,19 @@ router.put("/cancel/:id", requireLogin, async (req, res, next) => {
         const data = await fs.readFile(dataFilePath, "utf-8");
         const lendings = JSON.parse(data);
         const index = lendings.findIndex(l => l.id === Number(req.params.id));
-        if(index === -1){
-            res.status(404).send({ error: "Ausleihe nicht gefunden"});
+        if (index === -1) {
+            res.status(404).send({ error: "Ausleihe nicht gefunden" });
             return;
         }
-        if(lendings[index].freigeschaltet === true){
-            res.status(400).send({ error: "Ausleihe kann nicht abgebrochen werden, da diese schon freigeschaltet wurde."});
+        if (lendings[index].freigeschaltet === true) {
+            res.status(400).send({ error: "Ausleihe kann nicht abgebrochen werden, da diese schon freigeschaltet wurde." });
             return;
         }
         lendings[index].status = "abgebrochen";
         await fs.writeFile(dataFilePath, JSON.stringify(lendings, null, 2), "utf-8");
         res.status(200).json(lendings[index]);
         return;
-    } catch(err) {
+    } catch (err) {
         next(err);
     }
 });
@@ -177,17 +177,16 @@ router.put("/return/:id", requireLogin, requireModerator, async (req, res, next)
         const data = await fs.readFile(dataFilePath, "utf-8");
         const lendings = JSON.parse(data);
         const index = lendings.findIndex(l => l.id === Number(req.params.id));
-        if(index === -1){
-            res.status(404).send({ error: "Ausleihe nicht gefunden"});
+        if (index === -1) {
+            res.status(404).send({ error: "Ausleihe nicht gefunden" });
             return;
         }
         lendings[index].status = "zurückgegeben";
         lendings[index].rueckgabe = new Date().toISOString();
-
         await fs.writeFile(dataFilePath, JSON.stringify(lendings, null, 2), "utf-8");
         res.status(200).json(lendings[index]);
         return;
-    } catch(err) {
+    } catch (err) {
         next(err);
     }
 });
