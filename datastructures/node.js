@@ -11,17 +11,34 @@ const node {
     lastEditBy: userID,
     lastEditAt: timestamp,
     location: locationID,
+    networkEnvironment: networkEnvironmentID,
     manufacturer: string,
     model: string,
     serialnumber: string,
-    assignedTo?: activeDirectoryID, //sollte sich aus dem AD ziehen
+    accountingType: "konsumtiv" | "investiv",
     price?: number,
-    room?: string,
+    assignedTo?: adGuid,
+    patchPanelLabel?: string,
     supplier?: string,
     ipAddress?: ipAddressID,
     macAddress?: string[],
+    
+    leaseDurationMonths?: number,
+    contractType?: "purchase" | "pay-per-page" | "lease",
+    
+    electronicTest?: electronicTestID,
+
     notes?: string,
-    invoiceUrl?: string
+    invoiceUrl?: string[]
+}
+
+const electronicTest {
+    id: number,
+    tester: string,
+    lastTest: timestamp,
+    lastTestResult: "fail" | "pass",
+    nextTestPeriod: number,
+    scale: "months" | "years"
 }
 
 const ipAddress {
@@ -44,7 +61,7 @@ const status {
 
 const category {
     id: number,
-    name: string
+    name: string,
     description: string
 }
 
@@ -52,15 +69,20 @@ const location {
     id: number,
     city: string,
     address: string,
-    houseNumber?: string
+    houseNumber?: string,
+    room?: string
+}
+
+const networkEnvironment {
+    id: number,
+    name: string
 }
 
 const systemuser {
     id: number,
+    adGuid: string,
     username: string,
-    password: string,
-    passwordReset: boolean,
-    role: "user" | "mod" | "admin",
+    role: "viewer" | "editor" | "admin",
     createdAt: timestamp,
     lastLogin: timestamp,
     isActivated: boolean
