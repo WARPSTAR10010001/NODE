@@ -2,34 +2,38 @@ const node {
     id: number,
     inventoryNumber: string,
     name: string,
-    nodeCategory: categoryID,
+    category: categoryID,
     status: statusID,
+
     purchase: timestamp,
+    price: number,
+    supplier: string,
     depreciationPeriod: depreciationID,
+    accountingType: "konsumtiv" | "investiv",
+
     createdBy: userID,
     createdAt: timestamp,
     lastEditBy: userID,
     lastEditAt: timestamp,
+    assignedTo?: adGuid,
+
     location: locationID,
     networkEnvironment: networkEnvironmentID,
+
     manufacturer: string,
     model: string,
-    serialnumber: string,
-    accountingType: "konsumtiv" | "investiv",
-    price?: number,
-    assignedTo?: adGuid,
+    serialnumber?: string,
+    
     patchPanelLabel?: string,
-    supplier?: string,
     ipAddress?: ipAddressID,
     macAddress?: string[],
-    
+
     leaseDurationMonths?: number,
     contractType?: "purchase" | "pay-per-page" | "lease",
     
     electronicTest?: electronicTestID,
 
     notes?: string,
-    invoiceUrl?: string[]
 }
 
 const electronicTest {
