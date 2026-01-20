@@ -1,38 +1,17 @@
-const express = require("express");
-const session = require("express-session")
-const app = express();
-const { requireLogin, requireModerator, errorLogger, requestLogger } = require("./actionHandler");
-const PORT = 1000;
+const dotenv = require('dotenv');
+dotenv.config();
 
-app.use(express.json());
-app.use(session({
-    secret: "ein langfristig geheimer string", //muss ersetzt werden durch env datei
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-        secure: false,
-        httpOnly: true,
-        maxAge: 1000 * 60 * 60,
-    }
-}));
-app.use(requestLogger);
+const app = require('./app');
+const pool = require('./db');
 
-const userRoutes = require("./routes/user.routes");
-const adminRoutes = require("./routes/admin.router");
-const deviceRoutes = require("./routes/device.routes");
-const lendingRoutes = require("./routes/lending.routes");
-const reservationRoutes = require("./routes/reservation.routes");
+const port = process.env.PORT || 4000;
+const server = app.listen(port, () => console.log(`[START] NODE Server runs on port ${port}`));
 
-app.use("/users", userRoutes);
-app.use("/admin", adminRoutes);
-app.use("/devices", deviceRoutes);
-app.use("/lendings", lendingRoutes);
-app.use("/reservations", reservationRoutes);
-
-app.get("/", (req, res) => {
-    res.status(200).send("NODEBACK läuft!");
-});
-
-app.use(errorLogger);
-
-app.listen(PORT, () => console.log(`[START] NODEBACK läuft!`));
+function shutdown(sig) {
+  console.log(`\n[SHUTDOWN/${sig}] NODE Server is shutting down`);
+  server.close(async () => {
+    try { await pool.end(); } catch {}
+    process.exit(0);
+  });
+}
+['SIGINT','SIGTERM'].forEach(s => process.on(s, () => shutdown(s)));

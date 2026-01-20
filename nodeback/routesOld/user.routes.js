@@ -3,7 +3,7 @@ const router = express.Router();
 const fs = require("fs/promises");
 const path = require("path");
 const bcrypt = require("bcrypt");
-const { requireLogin, requireModerator } = require("../actionHandler");
+const { requireLogin, requireModerator } = require("../middleware/actionHandler");
 
 const dataFilePath = path.join(__dirname, "..", "data", "users.json");
 
