@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { requireModerator } = require("../middleware/actionHandler").default;
+const { requireModerator } = require("../middleware/actionHandler");
 
 router.get("/maintenance", requireModerator, (req, res) => {
   res.status(200).json({ maintenance: global.maintenanceMode });

@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 
-//const authRoutes = require('./routes/auth.routes');
+const authRoutes = require('./routes/auth.routes');
 
 const app = express();
 
@@ -20,7 +20,7 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser());
 
-//app.use('/api', authRoutes);
+app.use('/api', authRoutes);
 
 app.get('/', (_req, res) => res.send('NODE Server Health Check'));
 app.get('/api/health', (_req, res) =>
