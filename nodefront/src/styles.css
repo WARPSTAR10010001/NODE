@@ -9,3 +9,52 @@
   font-weight: 700;
   font-style: normal;
 }
+
+:root {
+    --red: #ff0000;
+    --green: #00ff00;
+    --blue: #0000ff;
+    --white: #ffffff;
+    --black: #000000;
+}
+
+*::selection {
+    background-color: var(--black);
+    color: var(--white);
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Space Mono', monospace;
+    display: flex;
+    flex-direction: column;
+    white-space: normal;
+    overflow-wrap: break-word;
+    word-break: normal;
+    height: 100%;
+    user-select: none;
+}
+
+a {
+    text-decoration: none;
+}
+
+.emp {
+    background: linear-gradient(110deg, #00D5F4, #00F5D1, #00D5F4);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: gradientMove 3s linear infinite;
+}
+
+@keyframes gradientMove {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    100% {
+        background-position: 200% 50%;
+    }
+}

@@ -10,9 +10,8 @@ const adConfig = {
 
 const ad = new ActiveDirectory(adConfig);
 
-// Test-LDAP-Login
-const testUsername = "M120D1S8\\j904336";  // Ersetze mit einem echten AD-Nutzer
-const testPassword = 'magnesium47495';       // Passwort des AD-Nutzers
+const testUsername = "j904338@rheinberg.krzn.de";
+const testPassword = 'auto';
 
 ad.authenticate(testUsername, testPassword, (err, auth) => {
   if (err) {
@@ -20,13 +19,14 @@ ad.authenticate(testUsername, testPassword, (err, auth) => {
     return;
   }
   if (auth) {
-    console.log('✅ LDAP Auth erfolgreich!');
-    // optional: Benutzerinfos auslesen
+    console.log('LDAP Auth erfolgreich!');
     ad.findUser(testUsername, (err, user) => {
       if (err) return console.error('[LDAP FIND USER ERROR]', err);
-      console.log('User-Daten:', user);
+      setInterval(() => {
+        console.log('User-Daten:', user);
+      }, 500)
     });
   } else {
-    console.log('❌ LDAP Auth fehlgeschlagen – falscher Nutzername oder Passwort');
+    console.log('LDAP Auth fehlgeschlagen - falscher Nutzername oder Passwort');
   }
 });
