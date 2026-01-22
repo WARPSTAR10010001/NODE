@@ -1,15 +1,3 @@
-.space-mono-regular {
-  font-family: "Space Mono", monospace;
-  font-weight: 400;
-  font-style: normal;
-}
-
-.space-mono-bold {
-  font-family: "Space Mono", monospace;
-  font-weight: 700;
-  font-style: normal;
-}
-
 :root {
     --red: #ff0000;
     --green: #00ff00;
@@ -26,7 +14,10 @@
 body {
     margin: 0;
     padding: 0;
-    font-family: 'Space Mono', monospace;
+    font-family: "Funnel Display", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 500;
+    font-style: normal;
     display: flex;
     flex-direction: column;
     white-space: normal;
@@ -41,7 +32,7 @@ a {
 }
 
 .emp {
-    background: linear-gradient(110deg, #00D5F4, #00F5D1, #00D5F4);
+    background: linear-gradient(to top, #fcc5e4 0%, #fda34b 15%, #ff7882 35%, #c8699e 52%, #7046aa 71%, #0c1db8 87%, #020f75 100%);
     background-size: 200% auto;
     -webkit-background-clip: text;
     background-clip: text;
@@ -51,7 +42,7 @@ a {
 
 @keyframes gradientMove {
     0% {
-        background-position: 0% 50%;
+        background-position: 50% 100%;
     }
 
     100% {
