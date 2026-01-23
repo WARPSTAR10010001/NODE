@@ -3,15 +3,44 @@
     --green: #00ff00;
     --blue: #0000ff;
     --white: #ffffff;
-    --black: #000000;
+    --black: #131313;
 }
 
 *::selection {
     background-color: var(--black);
     color: var(--white);
 }
+/*lösch das wenn themes implementiert sind*/
+body {
+    --bgc: #fff;
+    --bgca: #f0f0f5;
+    --tc: #131313;
+    --olc: #131313;
+    --bsc: #0000003f;
+    --bc: #fff;
+}
+
+body.light {
+    --bgc: #fff;
+    --bgca: #f0f0f5;
+    --tc: #131313;
+    --olc: #131313;
+    --bsc: #0000003f;
+    --bc: #fff;
+}
+
+body.dark {
+    --bgc: #131313;
+    --bgca: #1f1f1f;
+    --tc: #fff;
+    --olc: #fff;
+    --bsc: #000000;
+    --bc: #131313;
+}
 
 body {
+    background-color: var(--bgc);
+    color: var(--tc);
     margin: 0;
     padding: 0;
     font-family: "Funnel Display", sans-serif;
@@ -27,12 +56,8 @@ body {
     user-select: none;
 }
 
-a {
-    text-decoration: none;
-}
-
 .emp {
-    background: linear-gradient(to top, #fcc5e4 0%, #fda34b 15%, #ff7882 35%, #c8699e 52%, #7046aa 71%, #0c1db8 87%, #020f75 100%);
+    background: linear-gradient(110deg, #f40049, #f400cb, #f40049);
     background-size: 200% auto;
     -webkit-background-clip: text;
     background-clip: text;
@@ -48,4 +73,32 @@ a {
     100% {
         background-position: 200% 50%;
     }
+}
+
+a {
+    text-decoration: none;
+    color: var(--tc);
+}
+
+a:hover {
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.page-header {
+    font-size: 4em;
+    margin: 0;
+    padding-bottom: 50px;
+}
+
+button .primary {
+
+}
+
+button .secondary {
+
+}
+
+button .important {
+
 }
