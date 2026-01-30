@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, firstValueFrom } from 'rxjs';
+import { environment } from './environments/environment';
 
 export type Role = 0 | 1 | 2;
 
@@ -20,6 +21,7 @@ export interface AuthStatusResponse {
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
+  private base = environment.apiBaseUrl;
   private readonly _user$ = new BehaviorSubject<User | null>(null);
   user$ = this._user$.asObservable();
 
@@ -30,20 +32,20 @@ export class AuthService {
   }
 
   async status(): Promise<AuthStatusResponse> {
-    const res = await firstValueFrom(this.http.get<AuthStatusResponse>('/auth/status'));
+    const res = await firstValueFrom(this.http.get<AuthStatusResponse>(`${this.base}/auth/status`));
     this._user$.next(res.user);
     return res;
   }
 
   async login(username: string, password: string): Promise<void> {
     const res = await firstValueFrom(
-      this.http.post<{ loggedIn: boolean; user: User }>('/auth/login', { username, password })
+      this.http.post<{ loggedIn: boolean; user: User }>(`${this.base}/auth/login`, { username, password })
     );
     this._user$.next(res.user);
   }
 
   async logout(): Promise<void> {
-    await firstValueFrom(this.http.post('/auth/logout', {}));
+    await firstValueFrom(this.http.post(`${this.base}/auth/logout`, {}));
     this._user$.next(null);
   }
 }

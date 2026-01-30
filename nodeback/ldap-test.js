@@ -10,7 +10,7 @@ const adConfig = {
 
 const ad = new ActiveDirectory(adConfig);
 
-const testUsername = "j904338@rheinberg.krzn.de";
+const testUsername = "j904336@rheinberg.krzn.de";
 const testPassword = 'auto';
 
 ad.authenticate(testUsername, testPassword, (err, auth) => {

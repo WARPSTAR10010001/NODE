@@ -1,1 +1,38 @@
-<h1 class="emp">HALLO</h1>
+<div class="login-wrapper">
+  <div class="login-card">
+    <h1>NODE</h1>
+    <p class="sub">Anmeldung (LDAP)</p>
+
+    <form (ngSubmit)="submit()" #f="ngForm">
+      <label>
+        Benutzername
+        <input
+          type="text"
+          name="username"
+          [(ngModel)]="username"
+          autocomplete="username"
+          [disabled]="loading"
+          required
+        />
+      </label>
+
+      <label>
+        Passwort
+        <input
+          type="password"
+          name="password"
+          [(ngModel)]="password"
+          autocomplete="current-password"
+          [disabled]="loading"
+          required
+        />
+      </label>
+
+      <button class="primary" type="submit" [disabled]="loading || !f.valid">
+        {{ loading ? 'Anmelden…' : 'Anmelden' }}
+      </button>
+
+      <p *ngIf="error" class="error">{{ error }}</p>
+    </form>
+  </div>
+</div>

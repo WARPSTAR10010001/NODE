@@ -1,0 +1,6 @@
+.login-wrapper {
+  min-height: 50vh;
+  display: flex;
+  place-items: center;
+  padding: 24px;
+}
