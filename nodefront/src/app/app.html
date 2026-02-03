@@ -1,13 +1,20 @@
 <div id="cc">
     <div id="header">
         <a id="root-link" [routerLink]="['/']">
-            <span id="node">N-O-D-E</span>
+            <span id="node">NODE</span>
         </a>
+        <div id="header-buttons">
+            @if (auth.isLoggedIn()) {
+            <button (click)="navigateLogin(true)">Abmelden</button>
+            } @else {
+            <button (click)="navigateLogin(false)">Anmelden</button>
+            }
+        </div>
     </div>
     <div id="main">
         <router-outlet></router-outlet>
     </div>
     <div id="footer">
-        
+
     </div>
 </div>

@@ -1,6 +1,6 @@
 #main {
     flex: 1;
-    padding: 30px 60px;
+    padding: 20px 100px;
 }
 
 #cc {
@@ -15,7 +15,7 @@
     align-items: center;
     border-radius: 5px;
     justify-content: space-between;
-    padding: 5px 15px;
+    padding: 5px 10px 5px 15px;
     position: sticky;
     top: 10px;
     margin: 10px;
@@ -27,6 +27,15 @@
 
 #header span {
     font-size: 2em;
+}
+
+#header a {
+    text-decoration: none;
+    color: var(--tc);
+}
+
+#header a:hover {
+    color: var(--blue);
 }
 
 #footer {

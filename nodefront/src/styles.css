@@ -57,39 +57,9 @@ body {
     user-select: none;
 }
 
-.emp {
-    background: linear-gradient(110deg, #f40049, #f400cb, #f40049);
-    background-size: 200% auto;
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    animation: gradientMove 3s linear infinite;
-}
-
-@keyframes gradientMove {
-    0% {
-        background-position: 50% 100%;
-    }
-
-    100% {
-        background-position: 200% 50%;
-    }
-}
-
-a {
-    text-decoration: none;
-    color: var(--tc);
-}
-
 a:hover {
     cursor: pointer;
     text-decoration: underline;
-}
-
-.page-header {
-    font-size: 4em;
-    margin: 0;
-    padding-bottom: 50px;
 }
 
 button {
@@ -98,20 +68,93 @@ button {
     font-weight: 400;
     font-style: normal;
     font-size: 1em;
-    background-color: var(--bgc);
-    border: 1px solid var(--bgc);
+    background-color: var(--tc);
+    border: 3px solid var(--tc);
+    color: var(--bgc);
     border-radius: 5px;
-    box-shadow: 0px 0px 10px var(--bsc);
-    margin: 10px 0;
     padding: 3px 6px;
-    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
 }
 
 button:hover {
-    background-color: var(--tc);
-    color: var(--bgc)
+    color: var(--blue);
+    border: 3px solid var(--blue);
+    background-color: var(--bgc);
 }
 
-button.secondary {}
+input {
+    font-family: "Lexend", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 400;
+    font-style: normal;
+    font-size: 1em;
+    background-color: var(--bgc);
+    border: 3px solid var(--tc);
+    color: var(--tc);
+    border-radius: 5px;
+    padding: 3px 6px;
+    outline: none;
+    width: 200px;
+    min-height: 20px;
+}
 
-button.important {}
+input:focus {
+    border: 3px solid var(--blue);
+    color: var(--blue);
+}
+
+p {
+    font-size: 1.3em;
+}
+
+hr {
+    border: 2px solid var(--tc);
+    border-radius: 5px;
+    margin: 20px 0;
+}
+
+.title {
+    color: var(--blue);
+}
+
+.title hr {
+    border: 2px solid var(--blue);
+    border-radius: 5px;
+    margin: 10px 0;
+}
+
+.title h1 {
+    margin: -10px 0 20px 0;
+    font-size: 2.5em;
+}
+
+textarea {
+    font-family: "Lexend", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 400;
+    font-style: normal;
+    font-size: 1em;
+    background-color: var(--bgc);
+    border: 3px solid var(--tc);
+    color: var(--tc);
+    border-radius: 5px;
+    padding: 3px 6px;
+    outline: none;
+    resize: vertical;
+    width: 200px;
+    min-height: 20px;
+}
+
+textarea:focus {
+    border: 3px solid var(--blue);
+    color: var(--blue);
+}
+
+h1 {
+    font-size: 1.75em;
+}
+
+.buttonbar {
+    margin: 10px 0;
+    display: flex;
+    gap: 10px;
+}

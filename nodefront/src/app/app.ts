@@ -1,6 +1,6 @@
-import { Component, signal } from '@angular/core';
-import { RouterOutlet, RouterLink } from '@angular/router';
-import { CommonModule } from '@angular/common';
+import { Component } from '@angular/core';
+import { RouterOutlet, RouterLink, Router } from '@angular/router';
+import { AuthService } from './auth-service';
 
 @Component({
   selector: 'app-root',
@@ -9,5 +9,15 @@ import { CommonModule } from '@angular/common';
   styleUrl: './app.css'
 })
 export class App {
-  protected readonly title = signal('nodefront');
+  constructor(
+    public auth: AuthService,
+    private router: Router
+  ) {}
+
+  navigateLogin(logout: boolean) {
+    if (logout) {
+      this.auth.logout();
+    }
+    this.router.navigate(['/login']);
+  }
 }

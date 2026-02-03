@@ -10,21 +10,41 @@ import { activatedGuard } from './activated-guard';
 import { minRoleGuard } from './role-guard';
 
 export const routes: Routes = [
-  { path: 'login', component: LoginComponent, title: 'Login - NODE' },
-
-  { path: 'pending', canActivate: [authGuard], component: PendingComponent, title: 'Freigabe - NODE' },
-
+  {
+    path: 'login',
+    component: LoginComponent,
+    title: 'Login - NODE'
+  },
+  {
+    path: 'pending',
+    canActivate: [authGuard],
+    component: PendingComponent,
+    title: 'Freigabe - NODE'
+  },
   {
     path: '',
     canActivate: [authGuard, activatedGuard],
     children: [
-      { path: 'devices', component: DevicesComponent, title: 'Geräte - NODE' },
-
-      { path: 'admin/users', canActivate: [minRoleGuard(2)], component: AdminComponent, title: 'Userverwaltung - NODE' },
-
-      { path: '', pathMatch: 'full', redirectTo: 'devices' },
+      {
+        path: 'devices',
+        component: DevicesComponent,
+        title: 'Geräte - NODE'
+      },
+      {
+        path: 'admin',
+        canActivate: [minRoleGuard(2)],
+        component: AdminComponent,
+        title: 'Userverwaltung - NODE'
+      },
+      {
+        path: '',
+        pathMatch: 'full',
+        redirectTo: 'devices'
+      },
     ],
   },
-
-  { path: '**', redirectTo: 'devices' },
+  {
+    path: '**',
+    redirectTo: 'devices'
+  }
 ];
