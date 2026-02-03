@@ -8,12 +8,18 @@ import { AdminComponent } from './admin-component/admin-component';
 import { authGuard } from './auth-guard';
 import { activatedGuard } from './activated-guard';
 import { minRoleGuard } from './role-guard';
+import { ChangelogComponent } from './changelog-component/changelog-component';
 
 export const routes: Routes = [
   {
     path: 'login',
     component: LoginComponent,
     title: 'Login - NODE'
+  },
+  {
+    path: 'changelog',
+    component: ChangelogComponent,
+    title: 'Changelog - NODE'
   },
   {
     path: 'pending',

@@ -1,23 +1,26 @@
-<div class="title">
-  <hr>
-  <h1>Anmeldung</h1>
-</div>
-
-<form (ngSubmit)="submit()" #f="ngForm">
-  <label>
-    Benutzername
-    <br><input type="text" name="username" [(ngModel)]="username" autocomplete="username" [disabled]="loading" required />
-  </label>
-  <br>
-  <label>
-    Passwort
-    <br><input type="password" name="password" [(ngModel)]="password" autocomplete="current-password" [disabled]="loading"
-      required />
-  </label>
-  <div class="buttonbar">
-  <button class="primary" type="submit" [disabled]="loading || !f.valid">
-    {{ loading ? 'Anmelden…' : 'Anmelden' }}
-  </button>
+<div class="cc">
+  <div class="title">
+    <hr>
+    <h1>Anmeldung</h1>
   </div>
-  <p *ngIf="error" class="error">{{ error }}</p>
-</form>
+
+  <form (ngSubmit)="submit()" #f="ngForm">
+    <label>
+      Benutzername
+      <br><input type="text" name="username" [(ngModel)]="username" autocomplete="username" [disabled]="loading"
+        required />
+    </label>
+    <br>
+    <label>
+      Passwort
+      <br><input type="password" name="password" [(ngModel)]="password" autocomplete="current-password"
+        [disabled]="loading" required />
+    </label>
+    <div class="buttonbar">
+      <button class="primary" type="submit" [disabled]="loading || !f.valid">
+        {{ loading ? 'Anmelden…' : 'Anmelden' }}
+      </button>
+    </div>
+    <p *ngIf="error" class="error">{{ error }}</p>
+  </form>
+</div>

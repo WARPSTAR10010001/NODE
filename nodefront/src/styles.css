@@ -73,6 +73,7 @@ button {
     color: var(--bgc);
     border-radius: 5px;
     padding: 3px 6px;
+    cursor: pointer;
 }
 
 button:hover {
