@@ -7,8 +7,8 @@
 }
 
 *::selection {
-    background-color: var(--black);
-    color: var(--white);
+    background-color: var(--blue);
+    color: var(--bgc);
 }
 
 /*lösch das wenn themes implementiert sind*/
@@ -59,7 +59,8 @@ body {
 
 a:hover {
     cursor: pointer;
-    text-decoration: underline;
+    text-decoration: none;
+    color: var(--blue);
 }
 
 button {
@@ -67,7 +68,7 @@ button {
     font-optical-sizing: auto;
     font-weight: 400;
     font-style: normal;
-    font-size: 1em;
+    font-size: 1.5em;
     background-color: var(--tc);
     border: 3px solid var(--tc);
     color: var(--bgc);
@@ -82,12 +83,36 @@ button:hover {
     background-color: var(--bgc);
 }
 
+button.danger {
+    background-color: var(--bgc);
+    border: 3px solid var(--red);
+    color: var(--red);
+}
+
+button.danger:hover {
+    color: var(--bgc);
+    border: 3px solid var(--red);
+    background-color: var(--red);
+}
+
+button.confirm {
+    background-color: var(--green);
+    border: 3px solid var(--green);
+    color: var(--bgc);
+}
+
+button.confirm:hover {
+    color: var(--green);
+    border: 3px solid var(--green);
+    background-color: var(--bgc);
+}
+
 input {
     font-family: "Lexend", sans-serif;
     font-optical-sizing: auto;
     font-weight: 400;
     font-style: normal;
-    font-size: 1em;
+    font-size: 1.5em;
     background-color: var(--bgc);
     border: 3px solid var(--tc);
     color: var(--tc);
@@ -104,7 +129,7 @@ input:focus {
 }
 
 p {
-    font-size: 1.3em;
+    font-size: 1.5em;
 }
 
 hr {
@@ -125,7 +150,7 @@ hr {
 
 .title h1 {
     margin: -10px 0 20px 0;
-    font-size: 2.5em;
+    font-size: 3em;
 }
 
 textarea {
@@ -133,16 +158,16 @@ textarea {
     font-optical-sizing: auto;
     font-weight: 400;
     font-style: normal;
-    font-size: 1em;
+    font-size: 1.5em;
     background-color: var(--bgc);
     border: 3px solid var(--tc);
     color: var(--tc);
     border-radius: 5px;
     padding: 3px 6px;
     outline: none;
-    resize: vertical;
+    resize: none;
     width: 200px;
-    min-height: 20px;
+    height: 30px;
 }
 
 textarea:focus {
@@ -151,11 +176,28 @@ textarea:focus {
 }
 
 h1 {
-    font-size: 1.75em;
+    font-size: 2em;
 }
 
 .buttonbar {
     margin: 10px 0;
     display: flex;
     gap: 10px;
+}
+
+.card {
+    width: 100%;
+    background-color: var(--blue);
+    border: 3px solid var(--blue);
+    text-align: center;
+    padding: 20px 0;
+    font-size: 2.5em;
+    color: var(--bgc);
+    border-radius: 5px;
+    box-sizing: border-box;
+}
+
+.card:hover {
+    background-color: var(--bgc);
+    color: var(--blue);
 }
