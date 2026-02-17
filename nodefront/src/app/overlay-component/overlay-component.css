@@ -1,0 +1,62 @@
+.overlay-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#style-overlay,
+#error-overlay,
+#success-overlay,
+#info-overlay {
+  padding: 40px 50px;
+  border-radius: 10px;
+  width: min(800px, 92vw);
+  max-height: 92vh;
+  z-index: 10000;
+  box-shadow: 0 0 30px var(--bsc);
+  background: var(--bgc);
+  color: var(--tc);
+  overflow: auto;
+  box-sizing: border-box;
+}
+
+.page-header {
+  margin-bottom: -30px;
+}
+
+hr {
+  margin-bottom: 0;
+  margin-top: 0;
+}
+
+h1 {
+  padding-bottom: 20px;
+}
+
+#theme-selection,
+#contrast-selection {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 20px;
+}
+
+#theme-selection h1,
+#contrast-selection h1 {
+  font-size: 1.8em;
+  margin-bottom: 0px;
+}
+
+#theme-selection .options,
+#contrast-selection .options {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+  flex-wrap: wrap;
+}

@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { RouterOutlet, RouterLink, Router } from '@angular/router';
 import { AuthService } from './auth-service';
 import { VersionService } from './version-service';
+import { OverlayService } from './overlay-service';
 
 @Component({
   selector: 'app-root',
@@ -13,7 +14,8 @@ export class App {
   constructor(
     public auth: AuthService,
     private router: Router,
-    public version: VersionService
+    public version: VersionService,
+    private overlay: OverlayService
   ) {}
 
   navigateLogin(logout: boolean) {
@@ -25,5 +27,9 @@ export class App {
 
   navigateChangelog() {
     this.router.navigate(['/changelog']);
+  }
+
+  openStyleOverlay() {
+    this.overlay.showOverlay("style");
   }
 }

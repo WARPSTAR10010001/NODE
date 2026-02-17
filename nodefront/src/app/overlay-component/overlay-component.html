@@ -1,3 +1,62 @@
 <div class="cc">
-    
+    @if (overlayState.show) {
+    <div class="overlay-backdrop">
+        @if (overlayState.type === "style") {
+        <div id="style-overlay">
+            <h1 class="emp page-header">Style</h1>
+            <div id="theme-selection">
+                <h1>Farbe:</h1>
+                <div class="options">
+                    <label>
+                        <input type="radio" name="theme" value="light" [checked]="selectedTheme === 'light'"
+                            (change)="changeTheme('light')">
+                        Hell
+                    </label>
+                    <label>
+                        <input type="radio" name="theme" value="dark" [checked]="selectedTheme === 'dark'"
+                            (change)="changeTheme('dark')">
+                        Dunkel
+                    </label>
+                </div>
+            </div>
+            <hr>
+            <div id="contrast-selection">
+                <h1>Kontrast:</h1>
+                <div class="options">
+                    <label>
+                        <input type="radio" name="contrast" [checked]="selectedContrast === 'no-contrast'"
+                            (change)="changeContrast('no-contrast')">
+                        Aus
+                    </label>
+                    <label>
+                        <input type="radio" name="contrast" [checked]="selectedContrast === 'contrast'"
+                            (change)="changeContrast('contrast')">
+                        An
+                    </label>
+                </div>
+            </div>
+            <br>
+            <a (click)="close()" class="button-primary">Schließen</a>
+        </div>
+        } @else if (overlayState.type === "error") {
+        <div id="error-overlay">
+            <h1 class="emp page-header">Fehler</h1>
+            <h1>{{ overlayState.message }}</h1>
+            <a (click)="close()" class="button-primary">Schließen</a>
+        </div>
+        } @else if (overlayState.type === "success") {
+        <div id="success-overlay">
+            <h1 class="emp page-header">Erfolg</h1>
+            <h1>{{ overlayState.message }}</h1>
+            <a (click)="close()" class="button-primary">Schließen</a>
+        </div>
+        } @else if (overlayState.type === "info") {
+        <div id="info-overlay">
+            <h1 class="emp page-header">Info</h1>
+            <h1>{{ overlayState.message }}</h1>
+            <a (click)="close()" class="button-primary">Schließen</a>
+        </div>
+        }
+    </div>
+    }
 </div>

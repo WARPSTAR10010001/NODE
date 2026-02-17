@@ -8,19 +8,19 @@
     <label>
       Benutzername
       <br><input type="text" name="username" [(ngModel)]="username" autocomplete="username" [disabled]="loading"
-        required />
+        required>
     </label>
     <br>
     <label>
       Passwort
       <br><input type="password" name="password" [(ngModel)]="password" autocomplete="current-password"
-        [disabled]="loading" required />
+        [disabled]="loading" required>
     </label>
     <div class="buttonbar">
-      <button class="primary" type="submit" [disabled]="loading || !f.valid">
-        {{ loading ? 'Anmelden…' : 'Anmelden' }}
-      </button>
+      <button class="primary" type="submit" [disabled]="loading || !f.valid">Anmelden</button>
     </div>
-    <p *ngIf="error" class="error">{{ error }}</p>
+    @if (error) {
+    <p class="error">{{ error }}</p>
+    }
   </form>
 </div>
