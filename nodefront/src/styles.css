@@ -1,7 +1,7 @@
 :root {
-    --red: #ff0000;
-    --green: #00ff00;
-    --blue: #0000ff;
+    --red: #ff0080;
+    --green: #00ff15;
+    --blue: #0077ff;
     --white: #ffffff;
     --black: #131313;
 }
@@ -78,8 +78,8 @@ button {
 }
 
 button:hover {
-    color: var(--blue);
-    border: 3px solid var(--blue);
+    color: var(--tc);
+    border: 3px solid var(--tc);
     background-color: var(--bgc);
 }
 

@@ -1,16 +1,9 @@
 const express = require('express');
 const pool = require('../db');
-
-// IMPORTANT: Passe den Pfad an deine echte Middleware-Datei an.
-// Wenn du sie wie zuvor als auth.middleware.js hast, dann:
 const { requireAuth, requireAdmin } = require('../middleware/actionHandler');
-
-// Falls du WIRKLICH ../middleware/actionHandler nutzt, dann muss die Datei
-// exports { requireAuth, requireAdmin } liefern. Sonst -> Pfad fixen.
 
 const router = express.Router();
 
-// Rollen: 0=viewer, 1=editor, 2=admin
 function parseRole(value) {
   const n = Number(value);
   if (!Number.isInteger(n) || n < 0 || n > 2) return null;
@@ -22,18 +15,12 @@ function parseId(param) {
   return Number.isInteger(id) && id > 0 ? id : null;
 }
 
-/**
- * GET /users/me
- * Liefert den aktuell eingeloggten Benutzer (DB-Truth aus requireAuth)
- */
+
 router.get('/users/me', requireAuth, async (req, res) => {
   return res.json({ user: req.user });
 });
 
-/**
- * GET /users/pending
- * Admin-only: alle nicht aktivierten User
- */
+
 router.get('/users/pending', requireAuth, requireAdmin, async (_req, res) => {
   try {
     const { rows } = await pool.query(
@@ -49,11 +36,7 @@ router.get('/users/pending', requireAuth, requireAdmin, async (_req, res) => {
   }
 });
 
-/**
- * PATCH /users/:id/activate
- * Admin-only: aktiviert einen User und setzt optional die Rolle.
- * Body: { role?: 0|1|2 }
- */
+
 router.patch('/users/:id/activate', requireAuth, requireAdmin, async (req, res) => {
   const id = parseId(req.params.id);
   if (!id) return res.status(400).json({ error: 'Ungültige User-ID' });
@@ -83,11 +66,7 @@ router.patch('/users/:id/activate', requireAuth, requireAdmin, async (req, res) 
   }
 });
 
-/**
- * PATCH /users/:id/role
- * Admin-only: Rolle ändern
- * Body: { role: 0|1|2 }
- */
+
 router.patch('/users/:id/role', requireAuth, requireAdmin, async (req, res) => {
   const id = parseId(req.params.id);
   if (!id) return res.status(400).json({ error: 'Ungültige User-ID' });
@@ -95,7 +74,6 @@ router.patch('/users/:id/role', requireAuth, requireAdmin, async (req, res) => {
   const role = parseRole(req.body?.role);
   if (role === null) return res.status(400).json({ error: 'Ungültige Rolle (0=viewer,1=editor,2=admin)' });
 
-  // Schutz: Admin kann sich nicht selbst "ent-adminen"
   if (req.user?.id === id && req.user?.role === 2 && role !== 2) {
     return res.status(400).json({ error: 'Du kannst dir selbst die Adminrolle nicht entziehen.' });
   }
@@ -119,15 +97,11 @@ router.patch('/users/:id/role', requireAuth, requireAdmin, async (req, res) => {
   }
 });
 
-/**
- * PATCH /users/:id/deactivate
- * Admin-only: setzt User wieder auf pending.
- */
+
 router.patch('/users/:id/deactivate', requireAuth, requireAdmin, async (req, res) => {
   const id = parseId(req.params.id);
   if (!id) return res.status(400).json({ error: 'Ungültige User-ID' });
 
-  // Schutz: nicht selbst deaktivieren
   if (req.user?.id === id) {
     return res.status(400).json({ error: 'Du kannst dich nicht selbst deaktivieren.' });
   }
@@ -151,10 +125,7 @@ router.patch('/users/:id/deactivate', requireAuth, requireAdmin, async (req, res
   }
 });
 
-/**
- * GET /users
- * Admin-only: alle User, optional Suche ?q=
- */
+
 router.get('/users', requireAuth, requireAdmin, async (req, res) => {
   try {
     const q = String(req.query.q || '').trim();
