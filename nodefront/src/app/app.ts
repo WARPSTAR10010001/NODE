@@ -29,6 +29,14 @@ export class App {
     this.router.navigate(['/changelog']);
   }
 
+  navigateAdmin() {
+    this.router.navigate(['/admin']);
+  }
+
+  navigateCreate() {
+    this.router.navigate(['/create']);
+  }
+
   openStyleOverlay() {
     this.overlay.showOverlay("style");
   }

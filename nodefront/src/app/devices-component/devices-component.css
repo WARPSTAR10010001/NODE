@@ -1,0 +1,24 @@
+#device-list {
+    display: flex;
+    width: 100%;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.device {
+    border: 3px solid var(--tc);
+    border-radius: 5px;
+    padding: 10px;
+}
+
+.device p {
+    margin: 0px;
+}
+
+.device:hover {
+    color: var(--bgc);
+    background-color: var(--tc);
+    cursor: pointer;
+}

@@ -26,6 +26,7 @@ export class AuthService {
   private readonly _user$ = new BehaviorSubject<User | null>(null);
   user$ = this._user$.asObservable();
   isLoggedIn = signal<boolean>(false);
+  loggedRole = signal<any>(undefined);
 
   constructor(
     private http: HttpClient,
@@ -40,6 +41,7 @@ export class AuthService {
     const res = await firstValueFrom(this.http.get<AuthStatusResponse>(`${this.base}/auth/status`));
     this._user$.next(res.user);
     this.isLoggedIn.set(res.loggedIn);
+    this.loggedRole.set(res.user?.role);
     return res;
   }
 
@@ -48,6 +50,7 @@ export class AuthService {
       this.http.post<{ loggedIn: boolean; user: User }>(`${this.base}/auth/login`, { username, password })
     );
     this.isLoggedIn.set(res.loggedIn);
+    this.loggedRole.set(res.user?.role);
     this._user$.next(res.user);
   }
 
@@ -55,6 +58,7 @@ export class AuthService {
     await firstValueFrom(this.http.post(`${this.base}/auth/logout`, {}));
     this._user$.next(null);
     this.isLoggedIn.set(false);
+    this.loggedRole.set(undefined);
     this.router.navigate(['/login']);
   }
 }

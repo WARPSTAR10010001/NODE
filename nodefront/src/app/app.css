@@ -24,6 +24,11 @@
     border: 3px solid var(--tc);
 }
 
+#header-buttons {
+    display: flex;
+    gap: 10px;
+}
+
 #header span {
     font-size: 3em;
 }

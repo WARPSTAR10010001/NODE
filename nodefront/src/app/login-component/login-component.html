@@ -6,14 +6,16 @@
 
   <form (ngSubmit)="submit()" #f="ngForm">
     <label>
-      Benutzername
-      <br><input type="text" name="username" [(ngModel)]="username" autocomplete="username" [disabled]="loading"
+      Anmeldename (J-Nummer)
+      <br>
+      <input type="text" name="username" [(ngModel)]="username" autocomplete="username" [disabled]="loading"
         required>
     </label>
     <br>
     <label>
       Passwort
-      <br><input type="password" name="password" [(ngModel)]="password" autocomplete="current-password"
+      <br>
+      <input type="password" name="password" [(ngModel)]="password" autocomplete="current-password"
         [disabled]="loading" required>
     </label>
     <div class="buttonbar">

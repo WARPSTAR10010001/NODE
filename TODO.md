@@ -1,7 +1,6 @@
 Components:
 
 Admin (set user roles + authenticate users)
-Changelog (NODE updates)
 Detail-Edit (edit device details)
 Detail-View (view device details)
 Devices (list all devices + filters + sort)

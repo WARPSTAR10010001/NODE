@@ -9,6 +9,8 @@ import { authGuard } from './auth-guard';
 import { activatedGuard } from './activated-guard';
 import { minRoleGuard } from './role-guard';
 import { ChangelogComponent } from './changelog-component/changelog-component';
+import { createComponent } from '@angular/core';
+import { CreateComponent } from './create-component/create-component';
 
 export const routes: Routes = [
   {
@@ -40,7 +42,13 @@ export const routes: Routes = [
         path: 'admin',
         canActivate: [minRoleGuard(2)],
         component: AdminComponent,
-        title: 'Userverwaltung - NODE'
+        title: 'Nutzerverwaltung - NODE'
+      },
+      {
+        path: 'create',
+        canActivate: [minRoleGuard(1)],
+        component: CreateComponent,
+        title: 'Erstellen - NODE'
       },
       {
         path: '',
