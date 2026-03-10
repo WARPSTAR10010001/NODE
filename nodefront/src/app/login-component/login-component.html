@@ -8,21 +8,16 @@
     <label>
       Anmeldename (J-Nummer)
       <br>
-      <input type="text" name="username" [(ngModel)]="username" autocomplete="username" [disabled]="loading"
-        required>
+      <input type="text" name="username" [(ngModel)]="username" autocomplete="username">
     </label>
     <br>
     <label>
       Passwort
       <br>
-      <input type="password" name="password" [(ngModel)]="password" autocomplete="current-password"
-        [disabled]="loading" required>
+      <input type="password" name="password" [(ngModel)]="password" autocomplete="current-password">
     </label>
-    <div class="buttonbar">
+    <div class="button-row">
       <button class="primary" type="submit" [disabled]="loading || !f.valid">Anmelden</button>
     </div>
-    @if (error) {
-    <p class="error">{{ error }}</p>
-    }
   </form>
 </div>

@@ -209,7 +209,7 @@ h1 {
     font-size: 2em;
 }
 
-.buttonbar {
+.button-row {
     margin: 10px 0;
     display: flex;
     gap: 10px;

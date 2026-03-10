@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../auth-service';
+import { OverlayService } from '../overlay-service';
 
 @Component({
   selector: 'app-login-component',
@@ -17,9 +18,16 @@ export class LoginComponent {
   loading = false;
   error: string | null = null;
 
-  constructor(private auth: AuthService, private router: Router) {}
+  constructor(
+    private auth: AuthService,
+    private router: Router,
+    private overlay: OverlayService
+  ) {}
 
   async submit() {
+    if (this.username.trim().length === 0 || this.password.trim().length === 0) {
+      this.overlay.showOverlay("error", "Bitte füllen Sie das Anmeldeformular aus.");
+    }
     this.error = null;
 
     if (!this.username.trim() || !this.password) {
@@ -35,8 +43,10 @@ export class LoginComponent {
 
       if (user && !user.isActivated) {
         await this.router.navigateByUrl('/pending');
+        this.overlay.showOverlay("info", "Ihre Anmeldung war erfolgreich, jedoch müssen Sie von einem Systemadmin freigeschaltet werden.");
       } else {
         await this.router.navigateByUrl('/devices');
+        this.overlay.showOverlay("success", "Sie wurden erfolgreich angemeldet.");
       }
     } catch (e: any) {
       const msg =
@@ -46,6 +56,7 @@ export class LoginComponent {
         (e?.status === 500 ? 'Server/LDAP-Fehler.' : null) ||
         'Login fehlgeschlagen.';
       this.error = msg;
+      this.overlay.showOverlay("error", msg);
     } finally {
       this.loading = false;
     }

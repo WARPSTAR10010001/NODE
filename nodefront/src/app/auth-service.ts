@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, firstValueFrom } from 'rxjs';
 import { environment } from './environments/environment';
 import { Router } from '@angular/router';
+import { OverlayService } from './overlay-service';
 
 export type Role = 0 | 1 | 2;
 
@@ -30,7 +31,8 @@ export class AuthService {
 
   constructor(
     private http: HttpClient,
-    private router: Router
+    private router: Router,
+    private overlay: OverlayService
   ) {}
 
   get user(): User | null {
@@ -60,5 +62,6 @@ export class AuthService {
     this.isLoggedIn.set(false);
     this.loggedRole.set(undefined);
     this.router.navigate(['/login']);
+    this.overlay.showOverlay("success", "Sie wurden erfolgreich abgemeldet.");
   }
 }

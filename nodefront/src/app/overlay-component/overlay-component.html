@@ -41,21 +41,30 @@
     </div>
     } @else if (overlayState.type === "error") {
     <div id="error-overlay" class="overlay">
-        <h1 class="emp page-header">Fehler</h1>
-        <h1>{{ overlayState.message }}</h1>
-        <a (click)="close()" class="button-primary">Schließen</a>
+        <div class="title">
+            <hr>
+            <h1>Fehler</h1>
+        </div>
+        <p>{{ overlayState.message }}</p>
+        <button (click)="close()" class="button-primary">Schließen</button>
     </div>
     } @else if (overlayState.type === "success") {
     <div id="success-overlay" class="overlay">
-        <h1 class="emp page-header">Erfolg</h1>
-        <h1>{{ overlayState.message }}</h1>
-        <a (click)="close()" class="button-primary">Schließen</a>
+        <div class="title">
+            <hr>
+            <h1>Erfolg</h1>
+        </div>
+        <p>{{ overlayState.message }}</p>
+        <button (click)="close()" class="button-primary">Schließen</button>
     </div>
     } @else if (overlayState.type === "info") {
     <div id="info-overlay" class="overlay">
-        <h1 class="emp page-header">Info</h1>
-        <h1>{{ overlayState.message }}</h1>
-        <a (click)="close()" class="button-primary">Schließen</a>
+        <div class="title">
+            <hr>
+            <h1>Info</h1>
+        </div>
+        <p>{{ overlayState.message }}</p>
+        <button (click)="close()" class="button-primary">Schließen</button>
     </div>
     }
 </div>

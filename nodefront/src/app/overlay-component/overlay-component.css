@@ -49,3 +49,7 @@ label {
 h2 {
   margin-top: 0px;
 }
+
+p {
+  margin: -10px 0 15px;
+}

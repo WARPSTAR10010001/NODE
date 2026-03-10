@@ -94,7 +94,7 @@ router.post('/auth/login', async (req, res) => {
   ad.authenticate(username, password, async (err, auth) => {
     if (err) {
       console.error('[LDAP AUTH ERROR]', err);
-      return res.status(500).json({ error: 'LDAP-Fehler' });
+      return res.status(500).json({ error: 'Falsche Zugangsdaten. Kontrollieren Sie den Anmeldenamen und das Passwort.' });
     }
     if (!auth) {
       return res.status(401).json({ error: 'Ungültiger Nutzername oder Passwort' });
