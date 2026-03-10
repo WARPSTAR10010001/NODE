@@ -1,6 +1,6 @@
 :root {
     --red: #ff0080;
-    --green: #00ff15;
+    --green: #00ff91;
     --blue: #0077ff;
     --white: #ffffff;
     --black: #131313;
@@ -9,16 +9,6 @@
 *::selection {
     background-color: var(--blue);
     color: var(--bgc);
-}
-
-/*lösch das wenn themes implementiert sind*/
-body {
-    --bgc: #fff;
-    --bgca: #f0f0f5;
-    --tc: #131313;
-    --olc: #131313;
-    --bsc: #0000003f;
-    --bc: #fff;
 }
 
 body.light {
@@ -124,6 +114,46 @@ input {
 }
 
 input:focus {
+    border: 3px solid var(--blue);
+    color: var(--blue);
+}
+
+input[type="radio"] {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    width: 30px;
+    height: 20px;
+    border-radius: 100px;
+    border: 3px solid var(--tc);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: transparent;
+}
+
+input[type="radio"]:checked {
+    border: 7px solid var(--tc);
+}
+
+select {
+    font-family: "Lexend", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 400;
+    font-style: normal;
+    font-size: 1.5em;
+    background-color: var(--bgc);
+    border: 3px solid var(--tc);
+    color: var(--tc);
+    border-radius: 5px;
+    padding: 3px 6px;
+    outline: none;
+    width: 200px;
+    min-height: 20px;
+}
+
+select:focus {
     border: 3px solid var(--blue);
     color: var(--blue);
 }

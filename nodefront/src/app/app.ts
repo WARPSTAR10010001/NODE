@@ -3,10 +3,11 @@ import { RouterOutlet, RouterLink, Router } from '@angular/router';
 import { AuthService } from './auth-service';
 import { VersionService } from './version-service';
 import { OverlayService } from './overlay-service';
+import { OverlayComponent } from "./overlay-component/overlay-component";
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink],
+  imports: [RouterOutlet, RouterLink, OverlayComponent],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })

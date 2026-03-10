@@ -25,7 +25,6 @@ export class OverlayService {
     payload?: any,
     extra?: Partial<OverlayState>
   ) {
-    alert("hi mwoe");
     this.stateSubject.next({
       show: true,
       type,
