@@ -12,8 +12,6 @@ Pending (show authentication status)
 Services:
 
 device-service (load all devices + filters + sort + detail view)
-overlay-service (fix all bugs)
-theme-service (properly implement themes)
 
 
 Misc:

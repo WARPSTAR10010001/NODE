@@ -44,7 +44,7 @@
 
 #footer {
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     align-items: center;
     border-radius: 5px;
     font-size: 1.25em;
@@ -53,4 +53,9 @@
     z-index: 1000;
     background-color: var(--bgc);
     border: 3px solid var(--tc);
+}
+
+#footer-link {
+    display: flex;
+    gap: 30px;
 }

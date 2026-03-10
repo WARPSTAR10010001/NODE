@@ -22,7 +22,9 @@
         <router-outlet></router-outlet>
     </div>
     <div id="footer">
-        <a id="version" (click)="navigateChangelog()">{{ this.version.getVersion() }}</a>
-        <a id="style" (click)="openStyleOverlay()">Style</a>
+        <div id="footer-link">
+            <a id="version" (click)="navigateChangelog()">{{ this.version.getVersion() }}</a>
+            <a id="style" (click)="openStyleOverlay()">Style</a>
+        </div>
     </div>
 </div>
