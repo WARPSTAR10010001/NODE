@@ -4,6 +4,7 @@ const cookieParser = require('cookie-parser');
 
 const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
+const lookupRoutes = require('./routes/lookup.routes');
 
 const app = express();
 
@@ -23,6 +24,7 @@ app.use(cookieParser());
 
 app.use('/api', authRoutes);
 app.use('/api', userRoutes);
+app.use('/api', lookupRoutes);
 
 app.get('/', (_req, res) => res.send('NODE Server Health Check'));
 app.get('/api/health', (_req, res) =>
