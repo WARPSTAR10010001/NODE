@@ -1,24 +1,135 @@
-#device-list {
-    display: flex;
-    width: 100%;
-    flex-direction: row;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
+.header-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  gap: 20px;
 }
 
-.device {
-    border: 3px solid var(--tc);
-    border-radius: 5px;
-    padding: 10px;
+.search-section {
+  display: flex;
+  gap: 10px;
+  flex: 1;
 }
 
-.device p {
-    margin: 0px;
+.search-input {
+    flex: 1;
 }
 
-.device:hover {
-    color: var(--bgc);
-    background-color: var(--tc);
-    cursor: pointer;
+.stats {
+  font-size: 1.5em;
+  white-space: nowrap;
+}
+
+.table-container {
+  background-color: var(--bgc);
+  border: 3px solid var(--tc);
+  border-radius: 5px;
+  overflow-x: auto;
+}
+
+.devices-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.devices-table td.sortable {
+  cursor: pointer;
+}
+
+.devices-table td.sortable:hover {
+  color: var(--blue);
+}
+
+.devices-table td {
+  padding: 15px 10px;
+  border-bottom: 2px solid var(--tc);
+  vertical-align: top;
+}
+
+.device-row:hover {
+  background-color: var(--bgca);
+}
+
+.tag {
+  padding: 5px 10px;
+  border-radius: 5px;
+  font-size: 1.2em;
+  display: inline-block;
+}
+
+.tag.category {
+  background-color: var(--blue);
+  color: var(--bgc);
+  border: 2px solid var(--blue);
+}
+
+.tag.status {
+  background-color: var(--green);
+  color: var(--bgc);
+  border: 2px solid var(--green);
+}
+
+.location div {
+  margin-bottom: 2px;
+}
+
+.location-room {
+  font-size: 1.3em;
+  opacity: 0.8;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.action-button {
+  width: 100%;
+  margin: 0;
+}
+
+.loading-row td,
+.empty-row td {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.loading-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pagination-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20px;
+  padding: 20px;
+  background-color: var(--bgc);
+  border: 3px solid var(--tc);
+  border-radius: 5px;
+}
+
+.pagination-info {
+  font-size: 1.5em;
+}
+
+.pagination-controls {
+  display: flex;
+  gap: 5px;
+}
+
+.page-nav,
+.page-number {
+  min-width: 50px;
+  height: 40px;
+}
+
+.page-number.active {
+  background-color: var(--blue) !important;
+  color: var(--bgc) !important;
+  border-color: var(--blue) !important;
 }

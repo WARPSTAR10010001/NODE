@@ -1,0 +1,27 @@
+<div class="cc">
+    <div class="title">
+        <hr>
+        <h1>Dashboard</h1>
+    </div>
+    <div id="dashboard">
+        <div class="entry" [routerLink]="['/devices']">
+            <h1>Geräteübersicht</h1>
+            <hr>
+            <p>Alle Geräte von der NODE-Datenbank abrufen.</p>
+        </div>
+        @if (auth.loggedRole() === 2) {
+        <div class="entry" [routerLink]="['/admin']">
+            <h1>Adminpanel</h1>
+            <hr>
+            <p>Nutzer freischalten, Rollen verteilen, etc.</p>
+        </div>
+        }
+        @if (auth.loggedRole() === 1 || auth.loggedRole() === 2) {
+        <div class="entry" [routerLink]="['/create']">
+            <h1>Creator</h1>
+            <hr>
+            <p>Geräte, Kategorien, Status, etc. erstellen.</p>
+        </div>
+        }
+    </div>
+</div>

@@ -5,12 +5,15 @@
         </a>
         <div id="header-buttons">
             @if (auth.isLoggedIn()) {
-            @if (auth.loggedRole() === 1) {
-            <button (click)="navigateCreate()">+</button>
-            } @else if (auth.loggedRole() === 2) {
-            <button (click)="navigateCreate()">+</button>
-            <button id="admin" (click)="navigateAdmin()">Adminportal</button>
-            }
+                @if (auth.loggedRole() === 1) {
+                <button (click)="navigateCreate()">+</button>
+                } @else if (auth.loggedRole() === 2) {
+                <button (click)="navigateCreate()">+</button>
+                <button id="admin" (click)="navigateAdmin()">Adminportal</button>
+                }
+                @if (auth.activated() === true) {
+                <button (click)="navigateDashboard()">Dashboard</button>
+                }
             <button (click)="navigateLogin(true)">Abmelden</button>
             } @else {
             <button (click)="navigateLogin(false)">Anmelden</button>
@@ -26,5 +29,6 @@
             <a id="version" (click)="navigateChangelog()">{{ this.version.getVersion() }}</a>
             <a id="style" (click)="openStyleOverlay()">Style</a>
         </div>
+        <a id="documentation" (click)="navigateDocumentation()">Dokumentation</a>
     </div>
 </div>

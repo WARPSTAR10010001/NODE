@@ -38,6 +38,14 @@ export class App {
     this.router.navigate(['/create']);
   }
 
+  navigateDocumentation() {
+    this.router.navigate(['/docs']);
+  }
+
+  navigateDashboard() {
+    this.router.navigate(['/dashboard']);
+  }
+
   openStyleOverlay() {
     this.overlay.showOverlay("style");
   }

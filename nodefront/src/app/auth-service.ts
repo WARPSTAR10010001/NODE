@@ -28,6 +28,7 @@ export class AuthService {
   user$ = this._user$.asObservable();
   isLoggedIn = signal<boolean>(false);
   loggedRole = signal<any>(undefined);
+  activated = signal<any>(false);
 
   constructor(
     private http: HttpClient,
@@ -44,6 +45,7 @@ export class AuthService {
     this._user$.next(res.user);
     this.isLoggedIn.set(res.loggedIn);
     this.loggedRole.set(res.user?.role);
+    this.activated.set(res.user?.isActivated);
     return res;
   }
 
@@ -53,6 +55,7 @@ export class AuthService {
     );
     this.isLoggedIn.set(res.loggedIn);
     this.loggedRole.set(res.user?.role);
+    this.activated.set(res.user?.isActivated);
     this._user$.next(res.user);
   }
 

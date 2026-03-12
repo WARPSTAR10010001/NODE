@@ -3,34 +3,120 @@
         <hr>
         <h1>Geräteübersicht</h1>
     </div>
-    <div id="device-list">
-        <div class="device">
-            <p>L1205006</p>
-            <div class="device-detail">
-                <span>Laptop/PC</span>
-                <span>In Benutzung</span>
-            </div>
+    <div class="header-controls">
+        <div class="search-section">
+            <input [(ngModel)]="search" (keyup.enter)="onSearch()"
+                placeholder="Suche nach Inventarnummer, Name, Hersteller, Modell..." class="search-input">
+            <button (click)="onSearch()" class="search-button">
+                Suchen
+            </button>
+            @if (search) {
+            <button class="danger" (click)="clearSearch()">Löschen</button>
+            }
         </div>
-        <div class="device">
-            <p>L1205007</p>
-            <div class="device-detail">
-                <span>Laptop/PC</span>
-                <span>In Benutzung</span>
-            </div>
-        </div>
-        <div class="device">
-            <p>L1205008</p>
-            <div class="device-detail">
-                <span>Laptop/PC</span>
-                <span>In Benutzung</span>
-            </div>
-        </div>
-        <div class="device">
-            <p>L1205009</p>
-            <div class="device-detail">
-                <span>Laptop/PC</span>
-                <span>In Benutzung</span>
-            </div>
+        <div class="stats">
+            {{ total }} Geräte gefunden | Seite {{ page }} von {{ totalPages }}
         </div>
     </div>
+    <div class="table-container">
+        <table class="devices-table">
+            <thead>
+                <tr>
+                    <td (click)="onSort('inventoryNumber')" class="header sortable">
+                        Inventarnummer
+                        <span class="sort-indicator">{{ sortIcon('inventoryNumber') }}</span>
+                    </td>
+                    <td (click)="onSort('name')" class="header sortable">
+                        Name
+                        <span class="sort-indicator">{{ sortIcon('name') }}</span>
+                    </td>
+                    <td>Hersteller</td>
+                    <td>Modell</td>
+                    <td>Kategorie</td>
+                    <td>Status</td>
+                    <td>Standort</td>
+                    <td>Benutzer</td>
+                    <td (click)="onSort('lastEditAt')" class="header sortable">
+                        Zuletzt bearbeitet
+                        <span class="sort-indicator">{{ sortIcon('lastEditAt') }}</span>
+                    </td>
+                    <td>Aktionen</td>
+                </tr>
+            </thead>
+            <tbody>
+                @if (loading) {
+                <tr class="loading-row">
+                    <td colspan="10">
+                        <div class="loading-content">
+                            <span>Lade Gerate...</span>
+                        </div>
+                    </td>
+                </tr>
+                } @else if (devices.length === 0) {
+                <tr class="empty-row">
+                    <td colspan="10">
+                        <div class="empty-state">
+                            <h1>Keine Geräte gefunden</h1>
+                            @if (search) {
+                            <p>Anderen Suchbegriff eingeben.</p>
+                            } @else {
+                            <p>Erstellen Sie das erste Gerät.</p>
+                            }
+                        </div>
+                    </td>
+                </tr>
+                } @else {
+                @for (device of devices; track device.id) {
+                <tr class="device-row" [routerLink]="['devices', device.id]">
+                    <td class="inventory-number">{{ device.inventoryNumber }}</td>
+                    <td class="device-name">{{ device.name }}</td>
+                    <td>{{ device.manufacturer || '-' }}</td>
+                    <td>{{ device.model || '-' }}</td>
+                    <td>
+                        <span class="tag category">{{ device.categoryName }}</span>
+                    </td>
+                    <td>
+                        <span class="tag status">{{ device.statusName }}</span>
+                    </td>
+                    <td class="location">
+                        <div>{{ device.locationCity }}</div>
+                        <div>{{ device.locationAddress }} {{ device.locationHouseNumber }}</div>
+                        <div class="location-room">{{ device.locationRoom }}</div>
+                    </td>
+                    <td>{{ device.assignedToUsername || '-' }}</td>
+                    <td>{{ device.lastEditAt | date:'short' }}</td>
+                    <td class="actions">
+                        <button class="action-button view" routerLink="/devices/{{ device.id }}">
+                            Ansehen
+                        </button>
+                        <button class="action-button edit" routerLink="/devices/{{ device.id }}/edit">
+                            Bearbeiten
+                        </button>
+                    </td>
+                </tr>
+                }
+                }
+            </tbody>
+        </table>
+    </div>
+    @if (total > pageSize && !loading) {
+    <div class="pagination-section">
+        <div class="pagination-info">
+            Zeige {{ startItem }} bis {{ endItem }} von {{ total }} Geraten
+        </div>
+        <div class="pagination-controls">
+            <button class="page-nav" type="button" [disabled]="page === 1" (click)="onPageChange(page - 1)">
+                Vorherige
+            </button>
+            @for (p of pages; track p) {
+            <button class="page-number" type="button" [class.active]="p === page" (click)="onPageChange(p)">
+                {{ p }}
+            </button>
+            }
+            <button class="page-nav" type="button" [disabled]="page === totalPages" (click)="onPageChange(page + 1)">
+                Nächste
+            </button>
+        </div>
+    </div>
+    }
 </div>

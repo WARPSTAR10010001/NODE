@@ -1,7 +1,108 @@
-<div class="cc">
-    <div class="title">
-        <hr>
-        <h1>Erstellung</h1>
+<div class="create-container">
+  <div class="header-controls">
+    <div class="stats">Neu erstellen</div>
+    <div class="search-section">
+      <select class="search-input" (change)="onTypeChange($event)">
+        <option value="device">Gerät</option>
+        <option value="category">Kategorie</option>
+        <option value="status">Status</option>
+        <option value="location">Standort</option>
+        <option value="network-environment">Netzwerkumgebung</option>
+      </select>
     </div>
-    <label>Eingabefeld<br><select></select></label>
+  </div>
+
+  <div class="table-container" style="padding: 20px;">
+    <form [formGroup]="form" (ngSubmit)="onSubmit()">
+      
+      @if (selectedType === 'device') {
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+          
+          <div>
+            <h3>Basisdaten</h3>
+            <label>Inventarnummer *</label>
+            <input formControlName="inventoryNumber" type="text" class="search-input" style="width: 100%;">
+            <label>Gerätename *</label>
+            <input formControlName="name" type="text" class="search-input" style="width: 100%;">
+            <label>Kategorie *</label>
+            <select formControlName="categoryId" class="search-input" style="width: 100%;">
+              <option [value]="null">Wählen...</option>
+              @for (c of categories; track c.id) { <option [value]="c.id">{{c.name}}</option> }
+            </select>
+            <label>Status *</label>
+            <select formControlName="statusId" class="search-input" style="width: 100%;">
+              <option [value]="null">Wählen...</option>
+              @for (s of statuses; track s.id) { <option [value]="s.id">{{s.name}}</option> }
+            </select>
+          </div>
+          
+          <div>
+            <h3>Finanzen & Abschreibung</h3>
+            <label>Kaufdatum</label>
+            <input formControlName="purchase" type="date" class="search-input" style="width: 100%;">
+            <label>Preis (€)</label>
+            <input formControlName="price" type="number" step="0.01" class="search-input" style="width: 100%;">
+            
+            <label>Abschreibungsdauer</label>
+            <div style="display: flex; gap: 10px;">
+              <input formControlName="depreciationValue" type="number" class="search-input" style="flex: 1;" placeholder="Anzahl">
+              <select formControlName="depreciationScale" class="search-input" style="width: 120px;">
+                <option value="months">Monate</option>
+                <option value="years">Jahre</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="grid-column: 1 / span 2;">
+            <h3>Netzwerk & Mac-Adressen</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+              <div>
+                <label>IP-Adresse</label>
+                <input formControlName="ipAddress" type="text" class="search-input" style="width: 100%;" placeholder="192.168.x.x">
+              </div>
+              <div>
+                <label>Mac-Adressen (mit Komma trennen)</label>
+                <input formControlName="macAddressesRaw" type="text" class="search-input" style="width: 100%;" placeholder="00:11:22..., AA:BB:CC...">
+              </div>
+            </div>
+          </div>
+
+          <div style="grid-column: 1 / span 2;">
+            <h3>Zuweisung & Standort</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+              <div>
+                <label>Benutzer (lokale DB)</label>
+                <select formControlName="assignedToUserId" class="search-input" style="width: 100%;">
+                  <option [value]="null">Niemand</option>
+                  @for (u of users; track u.id) { <option [value]="u.id">{{u.username}}</option> }
+                </select>
+              </div>
+              <div>
+                <label>Standort</label>
+                <select formControlName="locationId" class="search-input" style="width: 100%;">
+                  <option [value]="null">Keiner</option>
+                  @for (l of locations; track l.id) { 
+                    <option [value]="l.id">{{l.city}}, {{l.address}} {{l.houseNumber}} ({{l.room}})</option> 
+                  }
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      } @else {
+        <div style="display: flex; flex-direction: column; gap: 15px;">
+          <label>Name *</label>
+          <input formControlName="name" type="text" class="search-input">
+          <label>Beschreibung</label>
+          <textarea formControlName="description" class="search-input" style="height: 100px;"></textarea>
+        </div>
+      }
+
+      <div style="margin-top: 30px; display: flex; gap: 10px;">
+        <button type="submit" [disabled]="form.invalid || submitting" class="search-button">
+          {{ submitting ? 'Speichert...' : 'Erstellen' }}
+        </button>
+      </div>
+    </form>
+  </div>
 </div>

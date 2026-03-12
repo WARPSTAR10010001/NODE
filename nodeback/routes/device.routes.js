@@ -340,7 +340,7 @@ router.patch('/devices/:id', requireAuth, requireActivated, requireEditor, async
     serialNumber: { col: `"serialNumber"`, transform: (v) => (v === null ? null : String(v)) },
 
     patchPanelLabel: { col: `"patchPanelLabel"`, transform: (v) => (v === null ? null : String(v)) },
-    ipAddress: { col: `"ipAddress"`, transform: (v) => v }, // inet string oder null
+    ipAddress: { col: `"ipAddress"`, transform: (v) => v },
     macAddresses: {
       col: `"macAddresses"`,
       transform: (v) => {

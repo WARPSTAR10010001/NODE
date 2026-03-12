@@ -1,6 +1,6 @@
 const express = require('express');
 const pool = require('../db');
-const { requireAuth, requireAdmin } = require('../middleware/actionHandler');
+const { requireAuth, requireEditor, requireAdmin } = require('../middleware/actionHandler');
 
 const router = express.Router();
 
@@ -125,8 +125,7 @@ router.patch('/users/:id/deactivate', requireAuth, requireAdmin, async (req, res
   }
 });
 
-
-router.get('/users', requireAuth, requireAdmin, async (req, res) => {
+router.get('/users', requireAuth, requireEditor, async (req, res) => {
   try {
     const q = String(req.query.q || '').trim();
 

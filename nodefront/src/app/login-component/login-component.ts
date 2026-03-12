@@ -45,7 +45,7 @@ export class LoginComponent {
         await this.router.navigateByUrl('/pending');
         this.overlay.showOverlay("info", "Ihre Anmeldung war erfolgreich, jedoch müssen Sie von einem Systemadmin freigeschaltet werden.");
       } else {
-        await this.router.navigateByUrl('/devices');
+        await this.router.navigateByUrl('/dashboard');
         this.overlay.showOverlay("success", "Sie wurden erfolgreich angemeldet.");
       }
     } catch (e: any) {

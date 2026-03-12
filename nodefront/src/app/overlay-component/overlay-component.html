@@ -4,7 +4,7 @@
     <div id="style-overlay" class="overlay">
         <div class="title">
             <hr>
-            <h1>Ansicht</h1>
+            <h1>Style</h1>
         </div>
         <div id="theme-selection" class="selection">
             <h2>Farbmodus:</h2>
@@ -37,7 +37,7 @@
                 </label>
             </div>
         </div>
-        <button (click)="close()" class="buttonaction">Schließen</button>
+        <button (click)="close()">Schließen</button>
     </div>
     } @else if (overlayState.type === "error") {
     <div id="error-overlay" class="overlay">
@@ -46,7 +46,7 @@
             <h1>Fehler</h1>
         </div>
         <p>{{ overlayState.message }}</p>
-        <button (click)="close()" class="button-primary">Schließen</button>
+        <button (click)="close()">Schließen</button>
     </div>
     } @else if (overlayState.type === "success") {
     <div id="success-overlay" class="overlay">
@@ -55,7 +55,7 @@
             <h1>Erfolg</h1>
         </div>
         <p>{{ overlayState.message }}</p>
-        <button (click)="close()" class="button-primary">Schließen</button>
+        <button (click)="close()">Schließen</button>
     </div>
     } @else if (overlayState.type === "info") {
     <div id="info-overlay" class="overlay">
@@ -64,7 +64,7 @@
             <h1>Info</h1>
         </div>
         <p>{{ overlayState.message }}</p>
-        <button (click)="close()" class="button-primary">Schließen</button>
+        <button (click)="close()">Schließen</button>
     </div>
     }
 </div>

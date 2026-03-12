@@ -4,10 +4,8 @@ const pool = require('../db');
 function getToken(req) {
   const cookieToken = req.cookies?.token;
   if (cookieToken) return cookieToken;
-
   const header = req.headers.authorization || '';
   if (header.startsWith('Bearer ')) return header.slice(7);
-
   return null;
 }
 
@@ -17,11 +15,8 @@ async function requireAuth(req, res, next) {
 
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
-
     const { rows } = await pool.query(
-      `SELECT id, "adGuid", username, role, "isActivated"
-       FROM users
-       WHERE id = $1`,
+      `SELECT id, "adGuid", username, role, "isActivated" FROM users WHERE id = $1`,
       [payload.sub]
     );
 
