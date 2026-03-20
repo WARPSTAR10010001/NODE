@@ -3,14 +3,34 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from './environments/environment';
 
-export interface User { id: number; adGuid: string; username: string; role: number; isActivated: boolean; }
+export interface LdapUser {
+  username: string;
+  displayName: string;
+  email?: string;
+}
+
+export interface UserRecord {
+  id: number;
+  username: string;
+  role: number;
+  isActivated: boolean;
+  createdAt: string;
+  lastLogin?: string;
+}
 
 @Injectable({ providedIn: 'root' })
 export class UserService {
-  private readonly base = environment.apiBaseUrl;
+  private apiUrl = `${environment.apiBaseUrl}/users`;
+
   constructor(private http: HttpClient) { }
 
-  list(q?: string): Observable<{ users: User[] }> {
-    return this.http.get<{ users: User[] }>(`${this.base}/users`, { params: q ? { q } : {} });
+  getUsers(): Observable<UserRecord[]> {
+    return this.http.get<UserRecord[]>(this.apiUrl);
+  }
+
+  searchLdap(query: string): Observable<LdapUser[]> {
+    return this.http.get<LdapUser[]>(`${environment.apiBaseUrl}/ldap/search`, {
+      params: { q: query }
+    });
   }
 }

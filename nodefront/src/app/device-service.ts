@@ -57,6 +57,29 @@ export interface DeviceListResponse {
   items: Device[];
 }
 
+export interface CreateDevicePayload {
+  name: string;
+  manufacturer?: string | null;
+  model?: string | null;
+  serialNumber?: string | null;
+  categoryId: number | null;
+  statusId: number | null;
+  purchase?: string | null;
+  price?: number | null;
+  supplier?: string | null;
+  depreciationId?: number | null;
+  accountingType: 'konsumtiv' | 'investiv';
+  assignedToUserId?: number | null;
+  locationId?: number | null;
+  networkEnvironmentId?: number | null;
+  patchPanelLabel?: string | null;
+  ipAddress?: string | null;
+  macAddresses?: string[] | null;
+  leaseDurationMonths?: number | null;
+  contractType?: 'purchase' | 'pay-per-page' | 'lease' | null | string;
+  notes?: string | null;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -91,7 +114,7 @@ export class DeviceService {
     return this.http.get<{ device: Device }>(`${this.base}/devices/${id}`);
   }
 
-  create(device: Omit<Device, 'id' | 'createdAt' | 'lastEditAt'>): Observable<{ device: Device }> {
+  create(device: CreateDevicePayload): Observable<{ device: Device }> {
     return this.http.post<{ device: Device }>(`${this.base}/devices`, device);
   }
 

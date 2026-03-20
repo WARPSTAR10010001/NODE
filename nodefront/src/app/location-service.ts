@@ -21,7 +21,7 @@ export class LocationService {
     return this.http.get<{ locations: Location[] }>(`${this.base}/locations`);
   }
 
-  create(location: { city: string; address: string; houseNumber?: string; room?: string }): Observable<{ location: Location }> {
+  create(location: { city: string; address: string; houseNumber?: string | null; room?: string | null }): Observable<{ location: Location }> {
     return this.http.post<{ location: Location }>(`${this.base}/locations`, location);
   }
 

@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { environment } from './environments/environment';
 
 export interface NetworkEnvironment {
@@ -15,7 +16,15 @@ export class NetworkEnvironmentService {
   constructor(private http: HttpClient) {}
 
   list(): Observable<{ networkEnvironments: NetworkEnvironment[] }> {
-    return this.http.get<{ networkEnvironments: NetworkEnvironment[] }>(`${this.base}/network-environments`);
+    return this.http
+      .get<{ networkEnvironments?: NetworkEnvironment[]; network_environments?: NetworkEnvironment[] }>(
+        `${this.base}/network-environments`
+      )
+      .pipe(
+        map((response) => ({
+          networkEnvironments: response.networkEnvironments ?? response.network_environments ?? []
+        }))
+      );
   }
 
   create(env: { name: string }): Observable<{ networkEnvironment: NetworkEnvironment }> {

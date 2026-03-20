@@ -37,34 +37,35 @@
                 </label>
             </div>
         </div>
-        <button (click)="close()">Schließen</button>
+        <div class="overlay-actions">
+            <button (click)="close()">Schließen</button>
+        </div>
     </div>
-    } @else if (overlayState.type === "error") {
-    <div id="error-overlay" class="overlay">
+    } @else {
+    <div class="overlay">
         <div class="title">
             <hr>
-            <h1>Fehler</h1>
+            <h1>
+                @if (overlayState.type === "error") { Fehler }
+                @else if (overlayState.type === "success") { Erfolg }
+                @else { Info }
+            </h1>
         </div>
         <p>{{ overlayState.message }}</p>
-        <button (click)="close()">Schließen</button>
-    </div>
-    } @else if (overlayState.type === "success") {
-    <div id="success-overlay" class="overlay">
-        <div class="title">
-            <hr>
-            <h1>Erfolg</h1>
+        <div class="overlay-actions">
+            @if (overlayState.actions?.length) {
+                @for (action of overlayState.actions; track action.label) {
+                <button
+                    [class.danger]="action.closeOnly"
+                    [class.confirm]="overlayState.type === 'success' && !action.closeOnly"
+                    (click)="navigate(action.route)">
+                    {{ action.label }}
+                </button>
+                }
+            } @else {
+            <button (click)="close()">Schließen</button>
+            }
         </div>
-        <p>{{ overlayState.message }}</p>
-        <button (click)="close()">Schließen</button>
-    </div>
-    } @else if (overlayState.type === "info") {
-    <div id="info-overlay" class="overlay">
-        <div class="title">
-            <hr>
-            <h1>Info</h1>
-        </div>
-        <p>{{ overlayState.message }}</p>
-        <button (click)="close()">Schließen</button>
     </div>
     }
 </div>

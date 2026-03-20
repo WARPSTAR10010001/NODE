@@ -1,150 +1,233 @@
-<div class="create-container">
-  <div class="type-selector">
-    <h1>Neues Objekt erstellen</h1>
-    <div class="selector-row">
-      <label>Typ:</label>
-      <select [(ngModel)]="entityType" (ngModelChange)="onTypeChange(entityType)">
-        <option value="device">Gerät</option>
-        <option value="category">Kategorie</option>
-        <option value="status">Status</option>
-        <option value="location">Standort</option>
-        <option value="network-environment">Netzwerkumgebung</option>
-      </select>
-    </div>
+<div class="create-page">
+  <div class="title">
     <hr>
+    <h1>{{ selectedLabel }} erstellen</h1>
   </div>
-  <form [formGroup]="form" (ngSubmit)="onSubmit()" class="form-grid">
+
+  <div class="topbar">
+    <div class="type-field">
+      <label for="entityType">Typ</label>
+      <select id="entityType" [ngModel]="entityType" (ngModelChange)="onTypeChange($event)">
+        @for (option of entityOptions; track option.id) {
+        <option [ngValue]="option.id">{{ option.label }}</option>
+        }
+      </select>
+    </div>
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" class="create-form">
     @if (entityType === 'device') {
-    <div class="form-section-title">Gerätedaten</div>
-    <div class="form-field">
-      <label for="inventoryNumber">Inventarnummer *</label>
-      <input id="inventoryNumber" formControlName="inventoryNumber" />
-    </div>
-    <div class="form-field">
-      <label for="name">Name *</label>
-      <input id="name" formControlName="name" />
-    </div>
-    <div class="form-field">
-      <label for="manufacturer">Hersteller</label>
-      <input id="manufacturer" formControlName="manufacturer" />
-    </div>
-    <div class="form-field">
-      <label for="model">Modell</label>
-      <input id="model" formControlName="model" />
-    </div>
-    <div class="form-field">
-      <label for="serialNumber">Seriennummer</label>
-      <input id="serialNumber" formControlName="serialNumber" />
-    </div>
-    <div class="form-field">
-      <label for="categoryId">Kategorie *</label>
-      <select id="categoryId" formControlName="categoryId">
-        <option [ngValue]="null">Kategorie wählen</option>
-        @for (c of categories; track c.id) {
-        <option [ngValue]="c.id">{{ c.name }}</option>
-        }
-      </select>
-    </div>
-    <div class="form-field">
-      <label for="statusId">Status *</label>
-      <select id="statusId" formControlName="statusId">
-        <option [ngValue]="null">Status wählen</option>
-        @for (s of statuses; track s.id) {
-        <option [ngValue]="s.id">{{ s.name }}</option>
-        }
-      </select>
-    </div>
-    <div class="form-field">
-      <label for="purchase">Kaufdatum</label>
-      <input id="purchase" formControlName="purchase" type="date" />
-    </div>
-    <div class="form-field">
-      <label for="price">Preis</label>
-      <input id="price" formControlName="price" type="number" />
-    </div>
-    <div class="form-field">
-      <label for="supplier">Lieferant</label>
-      <input id="supplier" formControlName="supplier" />
-    </div>
-    <div class="form-field">
-      <label for="locationId">Standort</label>
-      <select id="locationId" formControlName="locationId">
-        <option [ngValue]="null">Kein Standort</option>
-        @for (l of locations; track l.id) {
-        <option [ngValue]="l.id">
-          {{ l.city }} - {{ l.address }} {{ l.houseNumber }}
-        </option>
-        }
-      </select>
-    </div>
-    <div class="form-field">
-      <label for="networkEnvironmentId">Netzwerkumgebung</label>
-      <select id="networkEnvironmentId" formControlName="networkEnvironmentId">
-        <option [ngValue]="null">Keine</option>
-        @for (n of networkEnvironments; track n.id) {
-        <option [ngValue]="n.id">{{ n.name }}</option>
-        }
-      </select>
-    </div>
-    <div class="form-field full">
-      <label for="notes">Notizen</label>
-      <textarea id="notes" formControlName="notes" rows="3"></textarea>
-    </div>
-    }
-    @if (entityType === 'category') {
-    <div class="form-section-title">Kategorie</div>
+    <section class="form-section">
+      <h1>Gerät</h1>
+      <div class="field-grid">
+        <div class="form-field" [class.invalid]="controlInvalid('name')">
+          <label for="name">Name *</label>
+          <input id="name" formControlName="name">
+        </div>
+        <div class="form-field" [class.invalid]="controlInvalid('categoryId')">
+          <label for="categoryId">Kategorie *</label>
+          <select id="categoryId" formControlName="categoryId">
+            <option [ngValue]="null">Auswählen</option>
+            @for (category of categories; track category.id) {
+            <option [ngValue]="category.id">{{ category.name }}</option>
+            }
+          </select>
+        </div>
+        <div class="form-field" [class.invalid]="controlInvalid('statusId')">
+          <label for="statusId">Status *</label>
+          <select id="statusId" formControlName="statusId">
+            <option [ngValue]="null">Auswählen</option>
+            @for (status of statuses; track status.id) {
+            <option [ngValue]="status.id">{{ status.name }}</option>
+            }
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="assignedToUserId">Benutzer</label>
+          <select id="assignedToUserId" formControlName="assignedToUserId">
+            <option [ngValue]="null">Keine Zuweisung</option>
+            @for (user of users; track user.id) {
+            <option [ngValue]="user.id">{{ user.username }}</option>
+            }
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="manufacturer">Hersteller</label>
+          <input id="manufacturer" formControlName="manufacturer">
+        </div>
+        <div class="form-field">
+          <label for="model">Modell</label>
+          <input id="model" formControlName="model">
+        </div>
+        <div class="form-field">
+          <label for="serialNumber">Seriennummer</label>
+          <input id="serialNumber" formControlName="serialNumber">
+        </div>
+        <div class="form-field">
+          <label for="locationId">Standort</label>
+          <select id="locationId" formControlName="locationId">
+            <option [ngValue]="null">Keiner</option>
+            @for (location of locations; track location.id) {
+            <option [ngValue]="location.id">{{ formatLocation(location) }}</option>
+            }
+          </select>
+        </div>
+      </div>
+    </section>
 
-    <div class="form-field">
-      <label for="catName">Name *</label>
-      <input id="catName" formControlName="name" />
-    </div>
-    <div class="form-field full">
-      <label for="catDesc">Beschreibung</label>
-      <textarea id="catDesc" formControlName="description" rows="3"></textarea>
-    </div>
+    <section class="form-section">
+      <h1>Beschaffung</h1>
+      <div class="field-grid">
+        <div class="form-field">
+          <label for="purchase">Kaufdatum</label>
+          <input id="purchase" type="date" formControlName="purchase">
+        </div>
+        <div class="form-field">
+          <label for="price">Preis</label>
+          <input id="price" type="number" step="0.01" min="0" formControlName="price">
+        </div>
+        <div class="form-field">
+          <label for="supplier">Lieferant</label>
+          <input id="supplier" formControlName="supplier">
+        </div>
+        <div class="form-field">
+          <label for="accountingType">Buchungstyp</label>
+          <select id="accountingType" formControlName="accountingType">
+            <option value="konsumtiv">Konsumtiv</option>
+            <option value="investiv">Investiv</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="depreciationId">Abschreibung</label>
+          <select id="depreciationId" formControlName="depreciationId">
+            <option [ngValue]="null">Keine</option>
+            @for (depreciation of depreciations; track depreciation.id) {
+            <option [ngValue]="depreciation.id">{{ formatDepreciation(depreciation) }}</option>
+            }
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="contractType">Vertragsart</label>
+          <select id="contractType" formControlName="contractType">
+            <option value="">Keine</option>
+            <option value="purchase">Kauf</option>
+            <option value="lease">Leasing</option>
+            <option value="pay-per-page">Pay per Page</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="leaseDurationMonths">Laufzeit Monate</label>
+          <input id="leaseDurationMonths" type="number" min="0" step="1" formControlName="leaseDurationMonths">
+        </div>
+      </div>
+    </section>
+
+    <section class="form-section">
+      <h1>Netzwerk</h1>
+      <div class="field-grid">
+        <div class="form-field">
+          <label for="networkEnvironmentId">Netzwerkumgebung</label>
+          <select id="networkEnvironmentId" formControlName="networkEnvironmentId">
+            <option [ngValue]="null">Keine</option>
+            @for (networkEnvironment of networkEnvironments; track networkEnvironment.id) {
+            <option [ngValue]="networkEnvironment.id">{{ networkEnvironment.name }}</option>
+            }
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="ipAddress">IP-Adresse</label>
+          <input id="ipAddress" formControlName="ipAddress">
+        </div>
+        <div class="form-field">
+          <label for="patchPanelLabel">Patchpanel / Port</label>
+          <input id="patchPanelLabel" formControlName="patchPanelLabel">
+        </div>
+      </div>
+
+      <div class="mac-block" formArrayName="macAddresses">
+        <div class="subbar">
+          <h2>MAC-Adressen</h2>
+          <button type="button" (click)="addMacAddress()">+</button>
+        </div>
+        <div class="mac-list">
+          @for (macControl of macAddresses.controls; track $index) {
+          <div class="mac-row">
+            <div class="form-field compact" [class.invalid]="macControlInvalid($index)">
+              <label [for]="'mac-' + $index">MAC {{ $index + 1 }}</label>
+              <input [id]="'mac-' + $index" [formControlName]="$index" placeholder="00:11:22:33:44:55">
+            </div>
+            <button type="button" class="danger" (click)="removeMacAddress($index)">X</button>
+          </div>
+          }
+        </div>
+      </div>
+    </section>
+
+    <section class="form-section">
+      <h1>Notizen</h1>
+      <div class="field-grid single-column">
+        <div class="form-field full-width">
+          <label for="notes">Notizen</label>
+          <textarea id="notes" rows="6" formControlName="notes"></textarea>
+        </div>
+      </div>
+    </section>
     }
-    @if (entityType === 'status') {
-    <div class="form-section-title">Status</div>
-    <div class="form-field">
-      <label for="statName">Name *</label>
-      <input id="statName" formControlName="name" />
-    </div>
-    <div class="form-field full">
-      <label for="statDesc">Beschreibung</label>
-      <textarea id="statDesc" formControlName="description" rows="3"></textarea>
-    </div>
+
+    @if (entityType === 'category' || entityType === 'status') {
+    <section class="form-section">
+      <h1>{{ selectedLabel }}</h1>
+      <div class="field-grid single-column">
+        <div class="form-field" [class.invalid]="controlInvalid('name')">
+          <label [for]="entityType + '-name'">Name *</label>
+          <input [id]="entityType + '-name'" formControlName="name">
+        </div>
+        <div class="form-field full-width">
+          <label [for]="entityType + '-description'">Beschreibung</label>
+          <textarea [id]="entityType + '-description'" rows="6" formControlName="description"></textarea>
+        </div>
+      </div>
+    </section>
     }
+
     @if (entityType === 'location') {
-    <div class="form-section-title">Standort</div>
-    <div class="form-field">
-      <label for="city">Stadt *</label>
-      <input id="city" formControlName="city" />
-    </div>
-    <div class="form-field">
-      <label for="address">Adresse *</label>
-      <input id="address" formControlName="address" />
-    </div>
-    <div class="form-field">
-      <label for="houseNumber">Hausnummer</label>
-      <input id="houseNumber" formControlName="houseNumber" />
-    </div>
-    <div class="form-field">
-      <label for="room">Raum</label>
-      <input id="room" formControlName="room" />
-    </div>
+    <section class="form-section">
+      <h1>Standort</h1>
+      <div class="field-grid">
+        <div class="form-field" [class.invalid]="controlInvalid('city')">
+          <label for="city">Stadt *</label>
+          <input id="city" formControlName="city">
+        </div>
+        <div class="form-field" [class.invalid]="controlInvalid('address')">
+          <label for="address">Adresse *</label>
+          <input id="address" formControlName="address">
+        </div>
+        <div class="form-field">
+          <label for="houseNumber">Hausnummer</label>
+          <input id="houseNumber" formControlName="houseNumber">
+        </div>
+        <div class="form-field">
+          <label for="room">Raum</label>
+          <input id="room" formControlName="room">
+        </div>
+      </div>
+    </section>
     }
-    @if (entityType === 'network-environment') {
-    <div class="form-section-title">Netzwerkumgebung</div>
 
-    <div class="form-field">
-      <label for="envName">Name *</label>
-      <input id="envName" formControlName="name" />
-    </div>
+    @if (entityType === 'network-environment') {
+    <section class="form-section">
+      <h1>Netzwerkumgebung</h1>
+      <div class="field-grid single-column">
+        <div class="form-field" [class.invalid]="controlInvalid('name')">
+          <label for="envName">Name *</label>
+          <input id="envName" formControlName="name">
+        </div>
+      </div>
+    </section>
     }
+
     <div class="form-actions">
-      <button type="button" routerLink="/devices" class="danger">
-        Abbrechen
-      </button>
+      <button type="button" routerLink="/devices" class="danger">Abbrechen</button>
       <button type="submit" class="confirm" [disabled]="form.invalid || submitting">
         @if (submitting) { Speichere... } @else { Erstellen }
       </button>

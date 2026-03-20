@@ -1,5 +1,6 @@
 const express = require('express');
 const pool = require('../db');
+const crypto = require('crypto');
 
 const {
   requireAuth,
@@ -10,20 +11,26 @@ const {
 
 const router = express.Router();
 
-function toInt(v, fallback = null) {
-  if (v === undefined || v === null || v === '') return fallback;
-  const n = Number(v);
-  return Number.isInteger(n) ? n : fallback;
+function toInt(value, fallback = null) {
+  if (value === undefined || value === null || value === '') return fallback;
+  const parsed = Number(value);
+  return Number.isInteger(parsed) ? parsed : fallback;
+}
+
+function toDate(value) {
+  if (value === undefined || value === null || value === '') return null;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? undefined : parsed;
 }
 
 function hasOwn(obj, key) {
   return Object.prototype.hasOwnProperty.call(obj, key);
 }
 
-function normalizeMacArray(v) {
-  if (v === null) return null;
-  if (v === undefined) return undefined;
-  if (Array.isArray(v)) return v;
+function normalizeMacArray(value) {
+  if (value === null) return null;
+  if (value === undefined) return undefined;
+  if (Array.isArray(value)) return value;
   return undefined;
 }
 
@@ -79,6 +86,7 @@ router.get('/devices', requireAuth, requireActivated, async (req, res) => {
       OR s.name ILIKE $${params.length}
     )`);
   }
+
   if (statusId) {
     params.push(statusId);
     where.push(`d."statusId" = $${params.length}`);
@@ -118,7 +126,6 @@ router.get('/devices', requireAuth, requireActivated, async (req, res) => {
       `
       SELECT
         d.*,
-
         c.name AS "categoryName",
         s.name AS "statusName",
         l.city AS "locationCity",
@@ -127,11 +134,9 @@ router.get('/devices', requireAuth, requireActivated, async (req, res) => {
         l.room AS "locationRoom",
         ne.name AS "networkEnvironmentName",
         u.username AS "assignedToUsername",
-
         dep.time AS "depreciationTime",
         dep.scale AS "depreciationScale",
         ${depreciationEndSql} AS "depreciationEnd",
-
         etl.id AS "latestTestId",
         etl.tester AS "latestTestTester",
         etl."lastTest" AS "latestTestLastTest",
@@ -139,7 +144,6 @@ router.get('/devices', requireAuth, requireActivated, async (req, res) => {
         etl."nextTestPeriod" AS "latestTestNextPeriod",
         etl.scale AS "latestTestScale",
         ${nextTestAtSql} AS "latestTestNextAt"
-
       FROM devices d
       LEFT JOIN categories c ON c.id = d."categoryId"
       LEFT JOIN statuses s ON s.id = d."statusId"
@@ -147,7 +151,6 @@ router.get('/devices', requireAuth, requireActivated, async (req, res) => {
       LEFT JOIN network_environments ne ON ne.id = d."networkEnvironmentId"
       LEFT JOIN users u ON u.id = d."assignedToUserId"
       LEFT JOIN depreciations dep ON dep.id = d."depreciationId"
-
       LEFT JOIN LATERAL (
         SELECT *
         FROM electronic_tests et
@@ -155,7 +158,6 @@ router.get('/devices', requireAuth, requireActivated, async (req, res) => {
         ORDER BY et."lastTest" DESC NULLS LAST, et.id DESC
         LIMIT 1
       ) etl ON TRUE
-
       ${whereSql}
       ORDER BY d."${sort}" ${order}, d.id ${order}
       LIMIT $${params.length - 1}
@@ -165,22 +167,21 @@ router.get('/devices', requireAuth, requireActivated, async (req, res) => {
     );
 
     return res.json({ page, pageSize, total, items: dataResult.rows });
-  } catch (e) {
-    console.error('[DB ERROR] GET /devices', e);
-    return res.status(500).json({ error: 'Datenbankfehler' });
+  } catch (error) {
+    console.error('[DB ERROR] GET /devices', error);
+    return res.status(500).json({ error: 'Geraete konnten nicht geladen werden.' });
   }
 });
 
 router.get('/devices/:id', requireAuth, requireActivated, async (req, res) => {
   const id = toInt(req.params.id);
-  if (!id) return res.status(400).json({ error: 'Ungültige Geräte-ID' });
+  if (!id) return res.status(400).json({ error: 'Ungueltige Geraete-ID.' });
 
   try {
     const { rows } = await pool.query(
       `
       SELECT
         d.*,
-
         c.name AS "categoryName",
         s.name AS "statusName",
         l.city AS "locationCity",
@@ -189,11 +190,9 @@ router.get('/devices/:id', requireAuth, requireActivated, async (req, res) => {
         l.room AS "locationRoom",
         ne.name AS "networkEnvironmentName",
         u.username AS "assignedToUsername",
-
         dep.time AS "depreciationTime",
         dep.scale AS "depreciationScale",
         ${depreciationEndSql} AS "depreciationEnd",
-
         etl.id AS "latestTestId",
         etl.tester AS "latestTestTester",
         etl."lastTest" AS "latestTestLastTest",
@@ -201,7 +200,6 @@ router.get('/devices/:id', requireAuth, requireActivated, async (req, res) => {
         etl."nextTestPeriod" AS "latestTestNextPeriod",
         etl.scale AS "latestTestScale",
         ${nextTestAtSql} AS "latestTestNextAt"
-
       FROM devices d
       LEFT JOIN categories c ON c.id = d."categoryId"
       LEFT JOIN statuses s ON s.id = d."statusId"
@@ -221,25 +219,32 @@ router.get('/devices/:id', requireAuth, requireActivated, async (req, res) => {
       [id]
     );
 
-    if (rows.length === 0) return res.status(404).json({ error: 'Gerät nicht gefunden' });
+    if (rows.length === 0) return res.status(404).json({ error: 'Geraet nicht gefunden.' });
     return res.json({ device: rows[0] });
-  } catch (e) {
-    console.error('[DB ERROR] GET /devices/:id', e);
-    return res.status(500).json({ error: 'Datenbankfehler' });
+  } catch (error) {
+    console.error('[DB ERROR] GET /devices/:id', error);
+    return res.status(500).json({ error: 'Geraet konnte nicht geladen werden.' });
   }
 });
 
 router.post('/devices', requireAuth, requireActivated, requireEditor, async (req, res) => {
-  const b = req.body || {};
+  const body = req.body || {};
 
-  if (!b.inventoryNumber || !b.name || !b.categoryId || !b.statusId) {
-    return res.status(400).json({ error: 'inventoryNumber, name, categoryId, statusId erforderlich' });
+  if (!String(body.name || '').trim() || !toInt(body.categoryId) || !toInt(body.statusId)) {
+    return res.status(400).json({ error: 'name, categoryId und statusId sind erforderlich.' });
   }
 
-  const macs = normalizeMacArray(b.macAddresses);
-  if (macs === undefined && hasOwn(b, 'macAddresses')) {
-    return res.status(400).json({ error: 'macAddresses muss ein Array oder null sein' });
+  const macs = normalizeMacArray(body.macAddresses);
+  if (macs === undefined && hasOwn(body, 'macAddresses')) {
+    return res.status(400).json({ error: 'macAddresses muss ein Array oder null sein.' });
   }
+
+  const purchaseDate = toDate(body.purchase);
+  if (purchaseDate === undefined) {
+    return res.status(400).json({ error: 'purchase muss ein gueltiges Datum sein.' });
+  }
+
+  const generatedInventoryNumber = `NODE-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
 
   try {
     const { rows } = await pool.query(
@@ -269,91 +274,82 @@ router.post('/devices', requireAuth, requireActivated, requireEditor, async (req
       RETURNING *
       `,
       [
-        String(b.inventoryNumber),
-        String(b.name),
-        toInt(b.categoryId),
-        toInt(b.statusId),
-
-        b.purchase ? new Date(b.purchase) : null,
-        b.price ?? null,
-        b.supplier ?? null,
-        toInt(b.depreciationId),
-        b.accountingType ?? 'konsumtiv',
-
-        toInt(b.assignedToUserId),
-
-        toInt(b.locationId),
-        toInt(b.networkEnvironmentId),
-
-        b.manufacturer ?? null,
-        b.model ?? null,
-        b.serialNumber ?? null,
-
-        b.patchPanelLabel ?? null,
-        b.ipAddress ?? null,
+        generatedInventoryNumber,
+        String(body.name).trim(),
+        toInt(body.categoryId),
+        toInt(body.statusId),
+        purchaseDate,
+        body.price ?? null,
+        body.supplier ?? null,
+        toInt(body.depreciationId),
+        body.accountingType ?? 'konsumtiv',
+        toInt(body.assignedToUserId),
+        toInt(body.locationId),
+        toInt(body.networkEnvironmentId),
+        body.manufacturer ?? null,
+        body.model ?? null,
+        body.serialNumber ?? null,
+        body.patchPanelLabel ?? null,
+        body.ipAddress ?? null,
         macs === undefined ? null : macs,
-
-        toInt(b.leaseDurationMonths),
-        b.contractType ?? null,
-
-        b.notes ?? null,
-
+        toInt(body.leaseDurationMonths),
+        body.contractType ?? null,
+        body.notes ?? null,
         req.user.id,
         req.user.id,
       ]
     );
 
     return res.status(201).json({ device: rows[0] });
-  } catch (e) {
-    console.error('[DB ERROR] POST /devices', e);
-    if (e.code === '23505') return res.status(409).json({ error: 'Inventarnummer existiert bereits' });
-    return res.status(500).json({ error: 'Datenbankfehler' });
+  } catch (error) {
+    console.error('[DB ERROR] POST /devices', error);
+    if (error.code === '23505') {
+      return res.status(409).json({ error: 'Generierte Inventarnummer existiert bereits. Bitte erneut versuchen.' });
+    }
+    return res.status(500).json({ error: 'Geraet konnte nicht gespeichert werden.' });
   }
 });
 
 router.patch('/devices/:id', requireAuth, requireActivated, requireEditor, async (req, res) => {
   const id = toInt(req.params.id);
-  if (!id) return res.status(400).json({ error: 'Ungültige Geräte-ID' });
+  if (!id) return res.status(400).json({ error: 'Ungueltige Geraete-ID.' });
 
-  const b = req.body || {};
-
+  const body = req.body || {};
   const fields = {
-    inventoryNumber: { col: `"inventoryNumber"`, transform: (v) => (v === null ? null : String(v)) },
-    name: { col: `name`, transform: (v) => (v === null ? null : String(v)) },
-
-    categoryId: { col: `"categoryId"`, transform: (v) => (v === null ? null : toInt(v)) },
-    statusId: { col: `"statusId"`, transform: (v) => (v === null ? null : toInt(v)) },
-
-    purchase: { col: `purchase`, transform: (v) => (v === null ? null : new Date(v)) },
-    price: { col: `price`, transform: (v) => (v === null ? null : v) },
-    supplier: { col: `supplier`, transform: (v) => (v === null ? null : String(v)) },
-    depreciationId: { col: `"depreciationId"`, transform: (v) => (v === null ? null : toInt(v)) },
-    accountingType: { col: `"accountingType"`, transform: (v) => v },
-
-    assignedToUserId: { col: `"assignedToUserId"`, transform: (v) => (v === null ? null : toInt(v)) },
-
-    locationId: { col: `"locationId"`, transform: (v) => (v === null ? null : toInt(v)) },
-    networkEnvironmentId: { col: `"networkEnvironmentId"`, transform: (v) => (v === null ? null : toInt(v)) },
-
-    manufacturer: { col: `manufacturer`, transform: (v) => (v === null ? null : String(v)) },
-    model: { col: `model`, transform: (v) => (v === null ? null : String(v)) },
-    serialNumber: { col: `"serialNumber"`, transform: (v) => (v === null ? null : String(v)) },
-
-    patchPanelLabel: { col: `"patchPanelLabel"`, transform: (v) => (v === null ? null : String(v)) },
-    ipAddress: { col: `"ipAddress"`, transform: (v) => v },
+    name: { col: 'name', transform: (value) => (value === null ? null : String(value).trim()) },
+    categoryId: { col: '"categoryId"', transform: (value) => (value === null ? null : toInt(value)) },
+    statusId: { col: '"statusId"', transform: (value) => (value === null ? null : toInt(value)) },
+    purchase: {
+      col: 'purchase',
+      transform: (value) => {
+        const date = toDate(value);
+        if (date === undefined) throw new Error('purchase muss ein gueltiges Datum sein.');
+        return date;
+      }
+    },
+    price: { col: 'price', transform: (value) => (value === null ? null : value) },
+    supplier: { col: 'supplier', transform: (value) => (value === null ? null : String(value)) },
+    depreciationId: { col: '"depreciationId"', transform: (value) => (value === null ? null : toInt(value)) },
+    accountingType: { col: '"accountingType"', transform: (value) => value },
+    assignedToUserId: { col: '"assignedToUserId"', transform: (value) => (value === null ? null : toInt(value)) },
+    locationId: { col: '"locationId"', transform: (value) => (value === null ? null : toInt(value)) },
+    networkEnvironmentId: { col: '"networkEnvironmentId"', transform: (value) => (value === null ? null : toInt(value)) },
+    manufacturer: { col: 'manufacturer', transform: (value) => (value === null ? null : String(value)) },
+    model: { col: 'model', transform: (value) => (value === null ? null : String(value)) },
+    serialNumber: { col: '"serialNumber"', transform: (value) => (value === null ? null : String(value)) },
+    patchPanelLabel: { col: '"patchPanelLabel"', transform: (value) => (value === null ? null : String(value)) },
+    ipAddress: { col: '"ipAddress"', transform: (value) => value },
     macAddresses: {
-      col: `"macAddresses"`,
-      transform: (v) => {
-        const macs = normalizeMacArray(v);
-        if (macs === undefined) throw new Error('macAddresses muss ein Array oder null sein');
+      col: '"macAddresses"',
+      transform: (value) => {
+        const macs = normalizeMacArray(value);
+        if (macs === undefined) throw new Error('macAddresses muss ein Array oder null sein.');
         return macs;
       }
     },
-
-    leaseDurationMonths: { col: `"leaseDurationMonths"`, transform: (v) => (v === null ? null : toInt(v)) },
-    contractType: { col: `"contractType"`, transform: (v) => v },
-
-    notes: { col: `notes`, transform: (v) => (v === null ? null : String(v)) },
+    leaseDurationMonths: { col: '"leaseDurationMonths"', transform: (value) => (value === null ? null : toInt(value)) },
+    contractType: { col: '"contractType"', transform: (value) => value },
+    notes: { col: 'notes', transform: (value) => (value === null ? null : String(value)) },
   };
 
   const sets = [];
@@ -361,18 +357,18 @@ router.patch('/devices/:id', requireAuth, requireActivated, requireEditor, async
 
   try {
     for (const key of Object.keys(fields)) {
-      if (!hasOwn(b, key)) continue;
+      if (!hasOwn(body, key)) continue;
       const spec = fields[key];
-      const value = spec.transform(b[key]);
+      const value = spec.transform(body[key]);
       params.push(value);
       sets.push(`${spec.col} = $${params.length}`);
     }
-  } catch (e) {
-    return res.status(400).json({ error: String(e.message || e) });
+  } catch (error) {
+    return res.status(400).json({ error: String(error.message || error) });
   }
 
   if (sets.length === 0) {
-    return res.status(400).json({ error: 'Keine Felder zum Updaten übergeben' });
+    return res.status(400).json({ error: 'Keine Felder zum Aktualisieren uebergeben.' });
   }
 
   params.push(req.user.id);
@@ -390,18 +386,17 @@ router.patch('/devices/:id', requireAuth, requireActivated, requireEditor, async
       params
     );
 
-    if (rows.length === 0) return res.status(404).json({ error: 'Gerät nicht gefunden' });
+    if (rows.length === 0) return res.status(404).json({ error: 'Geraet nicht gefunden.' });
     return res.json({ device: rows[0] });
-  } catch (e) {
-    console.error('[DB ERROR] PATCH /devices/:id', e);
-    if (e.code === '23505') return res.status(409).json({ error: 'Inventarnummer existiert bereits' });
-    return res.status(500).json({ error: 'Datenbankfehler' });
+  } catch (error) {
+    console.error('[DB ERROR] PATCH /devices/:id', error);
+    return res.status(500).json({ error: 'Geraet konnte nicht aktualisiert werden.' });
   }
 });
 
 router.get('/devices/:id/electronic-tests', requireAuth, requireActivated, async (req, res) => {
   const deviceId = toInt(req.params.id);
-  if (!deviceId) return res.status(400).json({ error: 'Ungültige Geräte-ID' });
+  if (!deviceId) return res.status(400).json({ error: 'Ungueltige Geraete-ID.' });
 
   try {
     const { rows } = await pool.query(
@@ -421,31 +416,38 @@ router.get('/devices/:id/electronic-tests', requireAuth, requireActivated, async
       [deviceId]
     );
     return res.json({ items: rows });
-  } catch (e) {
-    console.error('[DB ERROR] GET /devices/:id/electronic-tests', e);
-    return res.status(500).json({ error: 'Datenbankfehler' });
+  } catch (error) {
+    console.error('[DB ERROR] GET /devices/:id/electronic-tests', error);
+    return res.status(500).json({ error: 'Pruefungen konnten nicht geladen werden.' });
   }
 });
 
 router.post('/devices/:id/electronic-tests', requireAuth, requireActivated, requireEditor, async (req, res) => {
   const deviceId = toInt(req.params.id);
-  if (!deviceId) return res.status(400).json({ error: 'Ungültige Geräte-ID' });
+  if (!deviceId) return res.status(400).json({ error: 'Ungueltige Geraete-ID.' });
 
-  const b = req.body || {};
-  if (!b.tester || !b.lastTest || !b.lastTestResult || b.nextTestPeriod === undefined || !b.scale) {
-    return res.status(400).json({ error: 'tester, lastTest, lastTestResult, nextTestPeriod, scale erforderlich' });
+  const body = req.body || {};
+  if (!body.tester || !body.lastTest || !body.lastTestResult || body.nextTestPeriod === undefined || !body.scale) {
+    return res.status(400).json({
+      error: 'tester, lastTest, lastTestResult, nextTestPeriod und scale sind erforderlich.',
+    });
   }
 
-  if (!['pass', 'fail'].includes(String(b.lastTestResult))) {
-    return res.status(400).json({ error: 'lastTestResult muss pass oder fail sein' });
+  if (!['pass', 'fail'].includes(String(body.lastTestResult))) {
+    return res.status(400).json({ error: 'lastTestResult muss pass oder fail sein.' });
   }
-  if (!['months', 'years'].includes(String(b.scale))) {
-    return res.status(400).json({ error: 'scale muss months oder years sein' });
+  if (!['months', 'years'].includes(String(body.scale))) {
+    return res.status(400).json({ error: 'scale muss months oder years sein.' });
   }
 
-  const nextTestPeriod = toInt(b.nextTestPeriod);
+  const nextTestPeriod = toInt(body.nextTestPeriod);
   if (!nextTestPeriod || nextTestPeriod < 1) {
-    return res.status(400).json({ error: 'nextTestPeriod muss eine positive Zahl sein' });
+    return res.status(400).json({ error: 'nextTestPeriod muss eine positive Zahl sein.' });
+  }
+
+  const lastTestDate = toDate(body.lastTest);
+  if (lastTestDate === undefined) {
+    return res.status(400).json({ error: 'lastTest muss ein gueltiges Datum sein.' });
   }
 
   try {
@@ -462,55 +464,68 @@ router.post('/devices/:id/electronic-tests', requireAuth, requireActivated, requ
       `,
       [
         deviceId,
-        String(b.tester),
-        new Date(b.lastTest),
-        String(b.lastTestResult),
+        String(body.tester),
+        lastTestDate,
+        String(body.lastTestResult),
         nextTestPeriod,
-        String(b.scale),
+        String(body.scale),
         req.user.id,
         req.user.id,
       ]
     );
 
     return res.status(201).json({ electronicTest: rows[0] });
-  } catch (e) {
-    console.error('[DB ERROR] POST /devices/:id/electronic-tests', e);
-    return res.status(500).json({ error: 'Datenbankfehler' });
+  } catch (error) {
+    console.error('[DB ERROR] POST /devices/:id/electronic-tests', error);
+    return res.status(500).json({ error: 'Pruefung konnte nicht gespeichert werden.' });
   }
 });
 
 router.patch('/electronic-tests/:testId', requireAuth, requireActivated, requireEditor, async (req, res) => {
   const testId = toInt(req.params.testId);
-  if (!testId) return res.status(400).json({ error: 'Ungültige Test-ID' });
+  if (!testId) return res.status(400).json({ error: 'Ungueltige Test-ID.' });
 
-  const b = req.body || {};
+  const body = req.body || {};
   const sets = [];
   const params = [testId];
 
   const allowed = {
-    tester: { col: 'tester', transform: (v) => (v === null ? null : String(v)) },
-    lastTest: { col: `"lastTest"`, transform: (v) => (v === null ? null : new Date(v)) },
-    lastTestResult: { col: `"lastTestResult"`, transform: (v) => v },
-    nextTestPeriod: { col: `"nextTestPeriod"`, transform: (v) => (v === null ? null : toInt(v)) },
-    scale: { col: `scale`, transform: (v) => v },
+    tester: { col: 'tester', transform: (value) => (value === null ? null : String(value)) },
+    lastTest: {
+      col: '"lastTest"',
+      transform: (value) => {
+        const date = toDate(value);
+        if (date === undefined) throw new Error('lastTest muss ein gueltiges Datum sein.');
+        return date;
+      }
+    },
+    lastTestResult: { col: '"lastTestResult"', transform: (value) => value },
+    nextTestPeriod: { col: '"nextTestPeriod"', transform: (value) => (value === null ? null : toInt(value)) },
+    scale: { col: 'scale', transform: (value) => value },
   };
 
-  for (const key of Object.keys(allowed)) {
-    if (!hasOwn(b, key)) continue;
+  try {
+    for (const key of Object.keys(allowed)) {
+      if (!hasOwn(body, key)) continue;
 
-    if (key === 'lastTestResult' && b[key] !== null && !['pass', 'fail'].includes(String(b[key]))) {
-      return res.status(400).json({ error: 'lastTestResult muss pass oder fail sein' });
-    }
-    if (key === 'scale' && b[key] !== null && !['months', 'years'].includes(String(b[key]))) {
-      return res.status(400).json({ error: 'scale muss months oder years sein' });
-    }
+      if (key === 'lastTestResult' && body[key] !== null && !['pass', 'fail'].includes(String(body[key]))) {
+        return res.status(400).json({ error: 'lastTestResult muss pass oder fail sein.' });
+      }
+      if (key === 'scale' && body[key] !== null && !['months', 'years'].includes(String(body[key]))) {
+        return res.status(400).json({ error: 'scale muss months oder years sein.' });
+      }
 
-    const value = allowed[key].transform(b[key]);
-    params.push(value);
-    sets.push(`${allowed[key].col} = $${params.length}`);
+      const value = allowed[key].transform(body[key]);
+      params.push(value);
+      sets.push(`${allowed[key].col} = $${params.length}`);
+    }
+  } catch (error) {
+    return res.status(400).json({ error: String(error.message || error) });
   }
 
-  if (sets.length === 0) return res.status(400).json({ error: 'Keine Felder zum Updaten übergeben' });
+  if (sets.length === 0) {
+    return res.status(400).json({ error: 'Keine Felder zum Aktualisieren uebergeben.' });
+  }
 
   params.push(req.user.id);
   sets.push(`"lastEditBy" = $${params.length}`);
@@ -527,28 +542,28 @@ router.patch('/electronic-tests/:testId', requireAuth, requireActivated, require
       params
     );
 
-    if (rows.length === 0) return res.status(404).json({ error: 'Prüfung nicht gefunden' });
+    if (rows.length === 0) return res.status(404).json({ error: 'Pruefung nicht gefunden.' });
     return res.json({ electronicTest: rows[0] });
-  } catch (e) {
-    console.error('[DB ERROR] PATCH /electronic-tests/:testId', e);
-    return res.status(500).json({ error: 'Datenbankfehler' });
+  } catch (error) {
+    console.error('[DB ERROR] PATCH /electronic-tests/:testId', error);
+    return res.status(500).json({ error: 'Pruefung konnte nicht aktualisiert werden.' });
   }
 });
 
 router.delete('/electronic-tests/:testId', requireAuth, requireActivated, requireAdmin, async (req, res) => {
   const testId = toInt(req.params.testId);
-  if (!testId) return res.status(400).json({ error: 'Ungültige Test-ID' });
+  if (!testId) return res.status(400).json({ error: 'Ungueltige Test-ID.' });
 
   try {
     const { rowCount } = await pool.query(
-      `DELETE FROM electronic_tests WHERE id = $1`,
+      'DELETE FROM electronic_tests WHERE id = $1',
       [testId]
     );
-    if (rowCount === 0) return res.status(404).json({ error: 'Prüfung nicht gefunden' });
+    if (rowCount === 0) return res.status(404).json({ error: 'Pruefung nicht gefunden.' });
     return res.json({ deleted: true });
-  } catch (e) {
-    console.error('[DB ERROR] DELETE /electronic-tests/:testId', e);
-    return res.status(500).json({ error: 'Datenbankfehler' });
+  } catch (error) {
+    console.error('[DB ERROR] DELETE /electronic-tests/:testId', error);
+    return res.status(500).json({ error: 'Pruefung konnte nicht geloescht werden.' });
   }
 });
 

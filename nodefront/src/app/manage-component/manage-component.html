@@ -1,0 +1,67 @@
+<div class="manage-page">
+  <div class="title">
+    <hr>
+    <h1>{{ title }}</h1>
+  </div>
+
+  <div class="manage-toolbar">
+    <div class="type-field">
+      <label for="manageType">Typ</label>
+      <select id="manageType" [ngModel]="type" (ngModelChange)="onTypeChange($event)">
+        @for (option of options; track option.id) {
+        <option [ngValue]="option.id">{{ option.label }}</option>
+        }
+      </select>
+    </div>
+    <button class="confirm" routerLink="/create">Neu</button>
+  </div>
+
+  <div class="manage-list">
+    @if (loading) {
+    <div class="manage-card"><p>Lade...</p></div>
+    } @else if (items.length === 0) {
+    <div class="manage-card"><p>Keine Einträge vorhanden.</p></div>
+    } @else {
+      @for (item of items; track item.id) {
+      <div class="manage-card">
+        @if (editingId === item.id) {
+          @if (isLocation(item)) {
+          <div class="edit-grid">
+            <input [(ngModel)]="draft['city']" placeholder="Stadt">
+            <input [(ngModel)]="draft['address']" placeholder="Adresse">
+            <input [(ngModel)]="draft['houseNumber']" placeholder="Hausnummer">
+            <input [(ngModel)]="draft['room']" placeholder="Raum">
+          </div>
+          } @else {
+          <div class="edit-grid">
+            <input [(ngModel)]="draft['name']" placeholder="Name">
+            @if (type !== 'network-environment') {
+            <textarea [(ngModel)]="draft['description']" rows="4" placeholder="Beschreibung"></textarea>
+            }
+          </div>
+          }
+          <div class="card-actions">
+            <button class="confirm" (click)="save(item)">Speichern</button>
+            <button class="danger" (click)="cancelEdit()">Abbrechen</button>
+          </div>
+        } @else {
+          @if (isLocation(item)) {
+          <div class="card-title">{{ item.city }}</div>
+          <div class="card-subline">{{ item.address }} {{ item.houseNumber || '' }}</div>
+          <div class="card-subline">{{ item.room || '-' }}</div>
+          } @else if (type === 'network-environment') {
+          <div class="card-title">{{ item.name }}</div>
+          } @else {
+          <div class="card-title">{{ item.name }}</div>
+          <div class="card-subline">{{ $any(item).description || '-' }}</div>
+          }
+          <div class="card-actions">
+            <button (click)="startEdit(item)">Bearbeiten</button>
+            <button class="danger" (click)="remove(item)">Löschen</button>
+          </div>
+        }
+      </div>
+      }
+    }
+  </div>
+</div>

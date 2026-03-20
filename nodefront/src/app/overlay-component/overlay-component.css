@@ -53,3 +53,9 @@ h2 {
 p {
   margin: -10px 0 15px;
 }
+
+.overlay-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}

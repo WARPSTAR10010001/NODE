@@ -1,17 +1,32 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
-const pool = require('../db');
 const ActiveDirectory = require('activedirectory2');
+const pool = require('../db');
 
 const router = express.Router();
 
-const adConfig = {
-  url: process.env.LDAP_URL,
-  baseDN: process.env.LDAP_BASE_DN,
-  username: process.env.LDAP_USER,
-  password: process.env.LDAP_PASSWORD
-};
-const ad = new ActiveDirectory(adConfig);
+function getAdConfig() {
+  return {
+    url: process.env.LDAP_URL,
+    baseDN: process.env.LDAP_BASE_DN,
+    username: process.env.LDAP_USER,
+    password: process.env.LDAP_PASSWORD,
+  };
+}
+
+function hasCompleteAdConfig(config) {
+  return Object.values(config).every((value) => typeof value === 'string' && value.trim().length > 0);
+}
+
+function createAdClient() {
+  const config = getAdConfig();
+
+  if (!hasCompleteAdConfig(config)) {
+    return null;
+  }
+
+  return new ActiveDirectory(config);
+}
 
 function jwtCookieOptions() {
   return {
@@ -21,6 +36,15 @@ function jwtCookieOptions() {
     maxAge: 1000 * 60 * 60 * 12,
     path: '/',
   };
+}
+
+function clearJwtCookie(res) {
+  res.clearCookie('token', {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.COOKIE_SECURE === 'true',
+    path: '/',
+  });
 }
 
 function bufferToGuid(buf) {
@@ -39,22 +63,23 @@ function normalizeGuidLike(value, fallbackUsername) {
   if (Buffer.isBuffer(value)) return bufferToGuid(value);
 
   if (typeof value === 'string') {
-    const s = value.trim();
+    const trimmed = value.trim();
 
-    if (s.startsWith('S-')) return fallbackUsername;
+    if (!trimmed) return fallbackUsername;
+    if (trimmed.startsWith('S-')) return fallbackUsername;
 
     const looksBase64 =
-      /^[A-Za-z0-9+/]+={0,2}$/.test(s) && s.length >= 20 && s.length <= 30;
+      /^[A-Za-z0-9+/]+={0,2}$/.test(trimmed) && trimmed.length >= 20 && trimmed.length <= 30;
 
     if (looksBase64) {
       try {
-        const buf = Buffer.from(s, 'base64');
-        if (buf.length === 16) return bufferToGuid(buf);
+        const buffer = Buffer.from(trimmed, 'base64');
+        if (buffer.length === 16) return bufferToGuid(buffer);
       } catch {
       }
     }
 
-    return s;
+    return trimmed;
   }
 
   try {
@@ -64,120 +89,176 @@ function normalizeGuidLike(value, fallbackUsername) {
   }
 }
 
-function findUserWithGuid(loginName) {
-  const opts = {
-    attributes: [
-      'dn',
-      'cn',
-      'sAMAccountName',
-      'userPrincipalName',
-      'objectGUID',
-      'objectGUID;binary',
-      'objectSid'
-    ]
-  };
+function isLikelyInvalidCredentials(error) {
+  const message = String(
+    error?.lde_message ||
+    error?.message ||
+    error?.code ||
+    ''
+  ).toLowerCase();
 
+  return (
+    message.includes('invalid credentials') ||
+    message.includes('data 52e') ||
+    message.includes('80090308')
+  );
+}
+
+function authenticateAd(ad, username, password) {
   return new Promise((resolve, reject) => {
-    ad.findUser(opts, loginName, (err, adUser) => {
-      if (err) return reject(err);
-      resolve(adUser);
+    ad.authenticate(username, password, (error, authenticated) => {
+      if (error) return reject(error);
+      resolve(Boolean(authenticated));
     });
   });
 }
 
-router.post('/auth/login', async (req, res) => {
-  const { username, password } = req.body || {};
-  if (!username || !password) {
-    return res.status(400).json({ error: 'Nutzername und Passwort erforderlich' });
+function findUserWithGuid(ad, loginName) {
+  const opts = {
+    attributes: [
+      'dn',
+      'cn',
+      'displayName',
+      'mail',
+      'sAMAccountName',
+      'userPrincipalName',
+      'objectGUID',
+      'objectGUID;binary',
+      'objectSid',
+    ],
+  };
+
+  return new Promise((resolve, reject) => {
+    ad.findUser(opts, loginName, (error, adUser) => {
+      if (error) return reject(error);
+      resolve(adUser || null);
+    });
+  });
+}
+
+async function upsertLocalUser(adGuid, username) {
+  const normalizedUsername = String(username).trim().toLowerCase();
+
+  const existing = await pool.query(
+    `SELECT id
+     FROM users
+     WHERE "adGuid" = $1 OR LOWER(username) = LOWER($2)
+     ORDER BY id ASC
+     LIMIT 1`,
+    [adGuid, normalizedUsername]
+  );
+
+  if (existing.rows.length > 0) {
+    const { rows } = await pool.query(
+      `
+      UPDATE users
+      SET "adGuid" = $1,
+          username = $2,
+          "lastLogin" = NOW()
+      WHERE id = $3
+      RETURNING id, "adGuid", username, role, "lastLogin", "isActivated"
+      `,
+      [adGuid, normalizedUsername, existing.rows[0].id]
+    );
+
+    return rows[0];
   }
 
-  ad.authenticate(username, password, async (err, auth) => {
-    if (err) {
-      console.error('[LDAP AUTH ERROR]', err);
-      return res.status(500).json({ error: 'Falsche Zugangsdaten. Kontrollieren Sie den Anmeldenamen und das Passwort.' });
+  const { rows } = await pool.query(
+    `
+    INSERT INTO users ("adGuid", username, role, "createdAt", "lastLogin", "isActivated")
+    VALUES ($1, $2, 0, NOW(), NOW(), FALSE)
+    RETURNING id, "adGuid", username, role, "lastLogin", "isActivated"
+    `,
+    [adGuid, normalizedUsername]
+  );
+
+  return rows[0];
+}
+
+router.post('/auth/login', async (req, res) => {
+  const username = String(req.body?.username || '').trim();
+  const password = String(req.body?.password || '');
+
+  if (!username || !password) {
+    return res.status(400).json({ error: 'Nutzername und Passwort sind erforderlich.' });
+  }
+
+  if (!process.env.JWT_SECRET) {
+    return res.status(500).json({ error: 'JWT-Konfiguration fehlt auf dem Server.' });
+  }
+
+  const ad = createAdClient();
+  if (!ad) {
+    return res.status(500).json({ error: 'LDAP-Konfiguration ist unvollstaendig.' });
+  }
+
+  try {
+    const authenticated = await authenticateAd(ad, username, password);
+
+    if (!authenticated) {
+      clearJwtCookie(res);
+      return res.status(401).json({ error: 'Ungueltiger Nutzername oder Passwort.' });
     }
-    if (!auth) {
-      return res.status(401).json({ error: 'Ungültiger Nutzername oder Passwort' });
-    }
+
+    let adGuid = username.toLowerCase();
 
     try {
-      const login = String(username).trim();
+      let adUser = await findUserWithGuid(ad, username);
 
-      let adUser = await findUserWithGuid(login);
-
-      if (!adUser && !login.includes('@') && process.env.LDAP_UPN_SUFFIX) {
-        const upn = `${login}${process.env.LDAP_UPN_SUFFIX}`;
-        adUser = await findUserWithGuid(upn);
+      if (!adUser && !username.includes('@') && process.env.LDAP_UPN_SUFFIX) {
+        adUser = await findUserWithGuid(ad, `${username}${process.env.LDAP_UPN_SUFFIX}`);
       }
-
-      if (!adUser) {
-        return res.status(404).json({ error: 'LDAP-Nutzer nicht gefunden' });
-      }
-
-      console.log('[LDAP DEBUG] baseDN:', adConfig.baseDN);
-      console.log('[LDAP DEBUG] login used:', login);
-      console.log('[LDAP DEBUG] adUser keys:', Object.keys(adUser));
-      console.log('[LDAP DEBUG] dn:', adUser?.dn);
-      console.log('[LDAP DEBUG] sAMAccountName:', adUser?.sAMAccountName);
-      console.log('[LDAP DEBUG] userPrincipalName:', adUser?.userPrincipalName);
-      console.log('[LDAP DEBUG] objectGUID:', adUser?.objectGUID);
-      console.log('[LDAP DEBUG] objectGUID;binary:', adUser?.['objectGUID;binary']);
-      console.log('[LDAP DEBUG] objectSid:', adUser?.objectSid);
 
       const rawGuid = adUser?.['objectGUID;binary'] ?? adUser?.objectGUID;
-      const adGuid = normalizeGuidLike(rawGuid, login);
-
-      if (adGuid === login) {
-        console.warn('[LDAP WARNING] adGuid ist fallback (=login). objectGUID wurde nicht als GUID geliefert.');
-      }
-
-      console.log('[LDAP DEBUG] computed adGuid:', adGuid);
-
-      const { rows } = await pool.query(
-        `
-        INSERT INTO users ("adGuid", username, role, "createdAt", "lastLogin", "isActivated")
-        VALUES ($1, $2, 0, NOW(), NOW(), FALSE)
-        ON CONFLICT ("adGuid")
-        DO UPDATE SET
-          username = EXCLUDED.username,
-          "lastLogin" = NOW()
-        RETURNING id, "adGuid", username, role, "lastLogin", "isActivated"
-        `,
-        [adGuid, login]
-      );
-
-      const user = rows[0];
-
-      const payload = { sub: user.id, username: user.username, role: user.role };
-      const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '12h' });
-
-      res.cookie('token', token, jwtCookieOptions());
-
-      return res.json({
-        token,
-        loggedIn: true,
-        user,
-        expHours: 12
-      });
-    } catch (e) {
-      console.error('[LOGIN FLOW ERROR]', e);
-      return res.status(500).json({ error: 'Login-Fehler (LDAP/DB)' });
+      adGuid = normalizeGuidLike(rawGuid, username.toLowerCase());
+    } catch (lookupError) {
+      console.warn('[LDAP LOOKUP WARNING]', lookupError);
     }
-  });
+
+    const user = await upsertLocalUser(adGuid, username);
+    const payload = { sub: user.id, username: user.username, role: user.role };
+    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '12h' });
+
+    res.cookie('token', token, jwtCookieOptions());
+
+    return res.json({
+      token,
+      loggedIn: true,
+      user,
+      expHours: 12,
+    });
+  } catch (error) {
+    console.error('[LDAP AUTH ERROR]', error);
+    clearJwtCookie(res);
+
+    if (isLikelyInvalidCredentials(error)) {
+      return res.status(401).json({ error: 'Ungueltiger Nutzername oder Passwort.' });
+    }
+
+    return res.status(502).json({ error: 'LDAP-Anmeldung ist derzeit nicht erreichbar.' });
+  }
 });
 
 router.post('/auth/logout', (_req, res) => {
-  res.clearCookie('token', { path: '/' });
+  clearJwtCookie(res);
   return res.json({ loggedIn: false });
 });
 
 router.get('/auth/status', async (req, res) => {
   const token = req.cookies?.token;
-  if (!token) return res.json({ loggedIn: false, user: null });
+
+  if (!token) {
+    return res.json({ loggedIn: false, user: null });
+  }
+
+  if (!process.env.JWT_SECRET) {
+    clearJwtCookie(res);
+    return res.status(500).json({ error: 'JWT-Konfiguration fehlt auf dem Server.' });
+  }
 
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
-
     const { rows } = await pool.query(
       `SELECT id, "adGuid", username, role, "lastLogin", "isActivated"
        FROM users
@@ -185,9 +266,14 @@ router.get('/auth/status', async (req, res) => {
       [payload.sub]
     );
 
-    if (rows.length === 0) return res.json({ loggedIn: false, user: null });
+    if (rows.length === 0) {
+      clearJwtCookie(res);
+      return res.json({ loggedIn: false, user: null });
+    }
+
     return res.json({ loggedIn: true, user: rows[0] });
-  } catch {
+  } catch (error) {
+    clearJwtCookie(res);
     return res.json({ loggedIn: false, user: null });
   }
 });

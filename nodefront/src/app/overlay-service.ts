@@ -7,11 +7,18 @@ export type OverlayType =
   | 'success'
   | 'info';
 
+export interface OverlayAction {
+  label: string;
+  route?: string;
+  closeOnly?: boolean;
+}
+
 export interface OverlayState {
   show: boolean;
   type: OverlayType;
   message?: string;
   payload?: any;
+  actions?: OverlayAction[];
 }
 
 @Injectable({ providedIn: 'root' })

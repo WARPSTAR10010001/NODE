@@ -1,13 +1,23 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import {
+  FormsModule,
+  ReactiveFormsModule,
+  UntypedFormArray,
+  UntypedFormBuilder,
+  UntypedFormGroup,
+  Validators
+} from '@angular/forms';
+import { RouterLink } from '@angular/router';
 
 import { DeviceService } from '../device-service';
 import { Category, CategoryService } from '../category-service';
 import { Status, StatusService } from '../status-service';
 import { Location, LocationService } from '../location-service';
 import { NetworkEnvironment, NetworkEnvironmentService } from '../network-environment-service';
+import { Depreciation, DepreciationService } from '../depreciation-service';
+import { UserRecord, UserService } from '../user-service';
+import { OverlayService } from '../overlay-service';
 
 type EntityType =
   | 'device'
@@ -16,56 +26,61 @@ type EntityType =
   | 'location'
   | 'network-environment';
 
+type EntityOption = {
+  id: EntityType;
+  label: string;
+};
+
+const OPTIONAL_MAC_PATTERN = /^$|^([0-9A-Fa-f]{2}([-:])){5}[0-9A-Fa-f]{2}$/;
+
 @Component({
   selector: 'app-create-component',
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink],
   templateUrl: './create-component.html',
   styleUrls: ['./create-component.css']
 })
 export class CreateComponent implements OnInit {
+  protected readonly entityOptions: EntityOption[] = [
+    { id: 'device', label: 'Gerät' },
+    { id: 'category', label: 'Kategorie' },
+    { id: 'status', label: 'Status' },
+    { id: 'location', label: 'Standort' },
+    { id: 'network-environment', label: 'Netzwerkumgebung' }
+  ];
+
   categories: Category[] = [];
   statuses: Status[] = [];
   locations: Location[] = [];
   networkEnvironments: NetworkEnvironment[] = [];
+  depreciations: Depreciation[] = [];
+  users: UserRecord[] = [];
   entityType: EntityType = 'device';
-  form!: FormGroup;
+  form!: UntypedFormGroup;
   submitting = false;
 
   constructor(
-    private fb: FormBuilder,
+    private fb: UntypedFormBuilder,
     private deviceService: DeviceService,
     private categoryService: CategoryService,
     private statusService: StatusService,
     private locationService: LocationService,
     private networkEnvService: NetworkEnvironmentService,
-    private router: Router
-  ) { }
+    private depreciationService: DepreciationService,
+    private userService: UserService,
+    private overlay: OverlayService
+  ) {}
 
   ngOnInit(): void {
     this.loadLookups();
     this.buildForm();
   }
 
-  private loadLookups(): void {
-    this.categoryService.list().subscribe({
-      next: (res) => this.categories = res.categories,
-      error: (err) => console.error('Load categories failed', err)
-    });
+  get selectedLabel(): string {
+    return this.entityOptions.find((option) => option.id === this.entityType)?.label ?? 'Eintrag';
+  }
 
-    this.statusService.list().subscribe({
-      next: (res) => this.statuses = res.statuses,
-      error: (err) => console.error('Load statuses failed', err)
-    });
-
-    this.locationService.list().subscribe({
-      next: (res) => this.locations = res.locations,
-      error: (err) => console.error('Load locations failed', err)
-    });
-
-    this.networkEnvService.list().subscribe({
-      next: (res) => this.networkEnvironments = res.networkEnvironments,
-      error: (err) => console.error('Load network envs failed', err)
-    });
+  get macAddresses(): UntypedFormArray {
+    return this.form.get('macAddresses') as UntypedFormArray;
   }
 
   onTypeChange(type: EntityType): void {
@@ -73,11 +88,129 @@ export class CreateComponent implements OnInit {
     this.buildForm();
   }
 
+  formatLocation(location: Location): string {
+    return [location.city, location.address, location.houseNumber].filter(Boolean).join(', ');
+  }
+
+  formatDepreciation(depreciation: Depreciation): string {
+    const unit = depreciation.scale === 'years' ? 'Jahre' : 'Monate';
+    return `${depreciation.time} ${unit}`;
+  }
+
+  controlInvalid(name: string): boolean {
+    const control = this.form.get(name);
+    return !!control && control.invalid && (control.dirty || control.touched);
+  }
+
+  macControlInvalid(index: number): boolean {
+    const control = this.macAddresses.at(index);
+    return !!control && control.invalid && (control.dirty || control.touched);
+  }
+
+  addMacAddress(value = ''): void {
+    this.macAddresses.push(this.createMacAddressControl(value));
+  }
+
+  removeMacAddress(index: number): void {
+    this.macAddresses.removeAt(index);
+    if (this.macAddresses.length === 0) this.addMacAddress();
+  }
+
+  onSubmit(): void {
+    if (this.form.invalid || this.submitting) return;
+
+    this.submitting = true;
+
+    switch (this.entityType) {
+      case 'device':
+        this.deviceService.create(this.buildDevicePayload()).subscribe({
+          next: ({ device }) => {
+            this.handleSuccess(
+              `Gerät "${device.name}" wurde erstellt.`,
+              '/devices'
+            );
+          },
+          error: (error) => this.handleError('Create device failed', error, 'Gerät konnte nicht erstellt werden.')
+        });
+        break;
+      case 'category':
+        this.categoryService.create(this.buildNameDescriptionPayload()).subscribe({
+          next: ({ category }) => {
+            this.handleSuccess(
+              `Kategorie "${category.name}" wurde erstellt.`,
+              '/manage/category'
+            );
+          },
+          error: (error) => this.handleError('Create category failed', error, 'Kategorie konnte nicht erstellt werden.')
+        });
+        break;
+      case 'status':
+        this.statusService.create(this.buildNameDescriptionPayload()).subscribe({
+          next: ({ status }) => {
+            this.handleSuccess(
+              `Status "${status.name}" wurde erstellt.`,
+              '/manage/status'
+            );
+          },
+          error: (error) => this.handleError('Create status failed', error, 'Status konnte nicht erstellt werden.')
+        });
+        break;
+      case 'location':
+        this.locationService.create(this.buildLocationPayload()).subscribe({
+          next: ({ location }) => {
+            this.handleSuccess(
+              `Standort "${this.formatLocation(location)}" wurde erstellt.`,
+              '/manage/location'
+            );
+          },
+          error: (error) => this.handleError('Create location failed', error, 'Standort konnte nicht erstellt werden.')
+        });
+        break;
+      case 'network-environment':
+        this.networkEnvService.create(this.buildNameOnlyPayload()).subscribe({
+          next: ({ networkEnvironment }) => {
+            this.handleSuccess(
+              `Netzwerkumgebung "${networkEnvironment.name}" wurde erstellt.`,
+              '/manage/network-environment'
+            );
+          },
+          error: (error) => this.handleError('Create network environment failed', error, 'Netzwerkumgebung konnte nicht erstellt werden.')
+        });
+        break;
+    }
+  }
+
+  private loadLookups(): void {
+    this.categoryService.list().subscribe({
+      next: (res) => (this.categories = res.categories),
+      error: (err) => console.error('Load categories failed', err)
+    });
+    this.statusService.list().subscribe({
+      next: (res) => (this.statuses = res.statuses),
+      error: (err) => console.error('Load statuses failed', err)
+    });
+    this.locationService.list().subscribe({
+      next: (res) => (this.locations = res.locations),
+      error: (err) => console.error('Load locations failed', err)
+    });
+    this.networkEnvService.list().subscribe({
+      next: (res) => (this.networkEnvironments = res.networkEnvironments),
+      error: (err) => console.error('Load network environments failed', err)
+    });
+    this.depreciationService.list().subscribe({
+      next: (res) => (this.depreciations = res.depreciations),
+      error: (err) => console.error('Load depreciations failed', err)
+    });
+    this.userService.getUsers().subscribe({
+      next: (res) => (this.users = res.filter((user) => user.isActivated)),
+      error: (err) => console.error('Load users failed', err)
+    });
+  }
+
   private buildForm(): void {
     switch (this.entityType) {
       case 'device':
         this.form = this.fb.group({
-          inventoryNumber: ['', [Validators.required, Validators.minLength(3)]],
           name: ['', Validators.required],
           manufacturer: [''],
           model: [''],
@@ -89,28 +222,24 @@ export class CreateComponent implements OnInit {
           supplier: [''],
           depreciationId: [null],
           accountingType: ['konsumtiv', Validators.required],
+          assignedToUserId: [null],
           locationId: [null],
           networkEnvironmentId: [null],
           patchPanelLabel: [''],
           ipAddress: [''],
+          macAddresses: this.fb.array([this.createMacAddressControl()]),
+          leaseDurationMonths: [null],
+          contractType: [''],
           notes: ['']
         });
         break;
-
       case 'category':
-        this.form = this.fb.group({
-          name: ['', Validators.required],
-          description: ['']
-        });
-        break;
-
       case 'status':
         this.form = this.fb.group({
           name: ['', Validators.required],
           description: ['']
         });
         break;
-
       case 'location':
         this.form = this.fb.group({
           city: ['', Validators.required],
@@ -119,7 +248,6 @@ export class CreateComponent implements OnInit {
           room: ['']
         });
         break;
-
       case 'network-environment':
         this.form = this.fb.group({
           name: ['', Validators.required]
@@ -128,80 +256,103 @@ export class CreateComponent implements OnInit {
     }
   }
 
-  get f() {
-    return this.form.controls;
+  private createMacAddressControl(value = '') {
+    return this.fb.control(value, Validators.pattern(OPTIONAL_MAC_PATTERN));
   }
 
-  onSubmit(): void {
-    if (this.form.invalid || this.submitting) return;
+  private buildDevicePayload() {
+    const raw = this.form.getRawValue();
+    const macAddresses = this.macAddresses.controls
+      .map((control) => String(control.value ?? '').trim())
+      .filter(Boolean);
 
-    this.submitting = true;
+    return {
+      name: this.normalizeText(raw.name) ?? '',
+      manufacturer: this.normalizeText(raw.manufacturer),
+      model: this.normalizeText(raw.model),
+      serialNumber: this.normalizeText(raw.serialNumber),
+      categoryId: this.normalizeNumber(raw.categoryId),
+      statusId: this.normalizeNumber(raw.statusId),
+      purchase: raw.purchase || null,
+      price: this.normalizeNumber(raw.price),
+      supplier: this.normalizeText(raw.supplier),
+      depreciationId: this.normalizeNumber(raw.depreciationId),
+      accountingType: raw.accountingType || 'konsumtiv',
+      assignedToUserId: this.normalizeNumber(raw.assignedToUserId),
+      locationId: this.normalizeNumber(raw.locationId),
+      networkEnvironmentId: this.normalizeNumber(raw.networkEnvironmentId),
+      patchPanelLabel: this.normalizeText(raw.patchPanelLabel),
+      ipAddress: this.normalizeText(raw.ipAddress),
+      macAddresses: macAddresses.length ? macAddresses : null,
+      leaseDurationMonths: this.normalizeNumber(raw.leaseDurationMonths),
+      contractType: this.normalizeText(raw.contractType),
+      notes: this.normalizeText(raw.notes)
+    };
+  }
 
-    switch (this.entityType) {
-      case 'device':
-        this.deviceService.create(this.form.value).subscribe({
-          next: () => {
-            this.submitting = false;
-            this.router.navigate(['/devices']);
-          },
-          error: (err) => {
-            this.submitting = false;
-            console.error('Create device failed', err);
-          }
-        });
-        break;
+  private buildNameDescriptionPayload() {
+    const raw = this.form.getRawValue();
+    return {
+      name: this.normalizeText(raw.name) ?? '',
+      description: this.normalizeText(raw.description) ?? ''
+    };
+  }
 
-      case 'category':
-        this.categoryService.create(this.form.value).subscribe({
-          next: () => {
-            this.submitting = false;
-            this.router.navigate(['/devices']);
-          },
-          error: (err) => {
-            this.submitting = false;
-            console.error('Create category failed', err);
-          }
-        });
-        break;
+  private buildLocationPayload() {
+    const raw = this.form.getRawValue();
+    return {
+      city: this.normalizeText(raw.city) ?? '',
+      address: this.normalizeText(raw.address) ?? '',
+      houseNumber: this.normalizeText(raw.houseNumber),
+      room: this.normalizeText(raw.room)
+    };
+  }
 
-      case 'status':
-        this.statusService.create(this.form.value).subscribe({
-          next: () => {
-            this.submitting = false;
-            this.router.navigate(['/devices']);
-          },
-          error: (err) => {
-            this.submitting = false;
-            console.error('Create status failed', err);
-          }
-        });
-        break;
+  private buildNameOnlyPayload() {
+    const raw = this.form.getRawValue();
+    return {
+      name: this.normalizeText(raw.name) ?? ''
+    };
+  }
 
-      case 'location':
-        this.locationService.create(this.form.value).subscribe({
-          next: () => {
-            this.submitting = false;
-            this.router.navigate(['/devices']);
-          },
-          error: (err) => {
-            this.submitting = false;
-            console.error('Create location failed', err);
-          }
-        });
-        break;
+  private normalizeText(value: unknown): string | null {
+    if (value === undefined || value === null) return null;
+    const trimmed = String(value).trim();
+    return trimmed.length ? trimmed : null;
+  }
 
-      case 'network-environment':
-        this.networkEnvService.create(this.form.value).subscribe({
-          next: () => {
-            this.submitting = false;
-            this.router.navigate(['/devices']);
-          },
-          error: (err) => {
-            this.submitting = false;
-            console.error('Create network env failed', err);
-          }
-        });
-        break;
+  private normalizeNumber(value: unknown): number | null {
+    if (value === undefined || value === null || value === '') return null;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  private handleSuccess(message: string, route: string): void {
+    this.submitting = false;
+    this.loadLookups();
+    this.buildForm();
+    this.overlay.showOverlay('success', message, null, {
+      actions: [
+        { label: 'Schließen', closeOnly: true },
+        { label: 'Zur Übersicht', route }
+      ]
+    });
+  }
+
+  private handleError(logMessage: string, error: unknown, fallbackMessage: string): void {
+    this.submitting = false;
+    console.error(logMessage, error);
+    this.overlay.showOverlay('error', this.extractApiError(error) || fallbackMessage);
+  }
+
+  private extractApiError(error: unknown): string | null {
+    if (typeof error !== 'object' || error === null || !('error' in error)) return null;
+    const candidate = (error as { error?: unknown }).error;
+    if (typeof candidate === 'string') return candidate;
+    if (typeof candidate === 'object' && candidate !== null && 'error' in candidate) {
+      const nested = (candidate as { error?: unknown }).error;
+      return typeof nested === 'string' ? nested : null;
     }
+    return null;
   }
 }

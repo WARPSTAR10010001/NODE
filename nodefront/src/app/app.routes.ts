@@ -8,6 +8,7 @@ import { ChangelogComponent } from './changelog-component/changelog-component';
 import { CreateComponent } from './create-component/create-component';
 import { DocumentationComponent } from './documentation-component/documentation-component';
 import { DashboardComponent } from './dashboard-component/dashboard-component';
+import { ManageComponent } from './manage-component/manage-component';
 
 import { authGuard } from './auth-guard';
 import { activatedGuard } from './activated-guard';
@@ -73,6 +74,12 @@ export const routes: Routes = [
         canActivate: [minRoleGuard(1)],
         component: CreateComponent,
         title: 'Erstellen • NODE'
+      },
+      {
+        path: 'manage/:type',
+        canActivate: [minRoleGuard(1)],
+        component: ManageComponent,
+        title: 'Verwalten • NODE'
       },
       {
         path: '',

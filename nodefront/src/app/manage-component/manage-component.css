@@ -1,0 +1,65 @@
+.manage-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.manage-toolbar,
+.manage-card {
+  background-color: var(--bgc);
+  border: 3px solid var(--tc);
+  border-radius: 5px;
+  padding: 20px;
+}
+
+.manage-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 16px;
+}
+
+.type-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.manage-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.card-title {
+  font-size: 1.6em;
+  margin-bottom: 6px;
+}
+
+.card-subline {
+  font-size: 1.2em;
+  margin-bottom: 6px;
+}
+
+.card-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.edit-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.edit-grid textarea,
+.edit-grid input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.edit-grid textarea {
+  grid-column: 1 / -1;
+  min-height: 120px;
+}

@@ -1,154 +1,211 @@
 const express = require('express');
+const ActiveDirectory = require('activedirectory2');
 const pool = require('../db');
-const { requireAuth, requireEditor, requireAdmin } = require('../middleware/actionHandler');
+const {
+  requireAuth,
+  requireActivated,
+  requireAdmin,
+} = require('../middleware/actionHandler');
 
 const router = express.Router();
 
-function parseRole(value) {
-  const n = Number(value);
-  if (!Number.isInteger(n) || n < 0 || n > 2) return null;
-  return n;
+const ROLE_MAP = {
+  viewer: 0,
+  editor: 1,
+  admin: 2,
+};
+
+function getAdClient() {
+  const config = {
+    url: process.env.LDAP_URL,
+    baseDN: process.env.LDAP_BASE_DN,
+    username: process.env.LDAP_USER,
+    password: process.env.LDAP_PASSWORD,
+  };
+
+  if (!config.url || !config.baseDN || !config.username || !config.password) {
+    return null;
+  }
+
+  return new ActiveDirectory(config);
 }
 
-function parseId(param) {
-  const id = Number(param);
+function normalizeRole(value) {
+  if (typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= 2) {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim().toLowerCase();
+
+    if (/^\d+$/.test(trimmed)) {
+      const numeric = Number(trimmed);
+      if (numeric >= 0 && numeric <= 2) return numeric;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(ROLE_MAP, trimmed)) {
+      return ROLE_MAP[trimmed];
+    }
+  }
+
+  return null;
+}
+
+function parseUserId(rawId) {
+  const id = Number(rawId);
   return Number.isInteger(id) && id > 0 ? id : null;
 }
 
+function ldapSearchUsers(ad, query) {
+  const escapedQuery = query.replace(/[\\*()]/g, '\\$&');
+  const filter = `(|(sn=*${escapedQuery}*)(givenName=*${escapedQuery}*)(displayName=*${escapedQuery}*)(sAMAccountName=*${escapedQuery}*)(userPrincipalName=*${escapedQuery}*)(mail=*${escapedQuery}*))`;
 
-router.get('/users/me', requireAuth, async (req, res) => {
-  return res.json({ user: req.user });
-});
-
-
-router.get('/users/pending', requireAuth, requireAdmin, async (_req, res) => {
-  try {
-    const { rows } = await pool.query(
-      `SELECT id, "adGuid", username, role, "createdAt", "lastLogin", "isActivated"
-       FROM users
-       WHERE "isActivated" = FALSE
-       ORDER BY "createdAt" ASC`
+  return new Promise((resolve, reject) => {
+    ad.findUsers(
+      {
+        filter,
+        attributes: ['dn', 'sAMAccountName', 'displayName', 'givenName', 'sn', 'mail', 'userPrincipalName'],
+      },
+      false,
+      (err, users) => {
+        if (err) return reject(err);
+        resolve(Array.isArray(users) ? users : []);
+      }
     );
-    return res.json({ pending: rows });
-  } catch (e) {
-    console.error('[DB ERROR] GET /users/pending', e);
-    return res.status(500).json({ error: 'Datenbankfehler' });
-  }
-});
+  });
+}
 
+router.get('/ldap/search', requireAuth, requireActivated, async (req, res) => {
+  const q = String(req.query.q || '').trim();
 
-router.patch('/users/:id/activate', requireAuth, requireAdmin, async (req, res) => {
-  const id = parseId(req.params.id);
-  if (!id) return res.status(400).json({ error: 'Ungültige User-ID' });
-
-  const role = req.body?.role === undefined ? null : parseRole(req.body.role);
-  if (req.body?.role !== undefined && role === null) {
-    return res.status(400).json({ error: 'Ungültige Rolle (0=viewer,1=editor,2=admin)' });
+  if (!q || q.length < 2) {
+    return res.json([]);
   }
 
-  try {
-    const { rows } = await pool.query(
-      `
-      UPDATE users
-      SET "isActivated" = TRUE,
-          role = COALESCE($2, role)
-      WHERE id = $1
-      RETURNING id, "adGuid", username, role, "createdAt", "lastLogin", "isActivated"
-      `,
-      [id, role]
-    );
-
-    if (rows.length === 0) return res.status(404).json({ error: 'User nicht gefunden' });
-    return res.json({ user: rows[0] });
-  } catch (e) {
-    console.error('[DB ERROR] PATCH /users/:id/activate', e);
-    return res.status(500).json({ error: 'Datenbankfehler' });
-  }
-});
-
-
-router.patch('/users/:id/role', requireAuth, requireAdmin, async (req, res) => {
-  const id = parseId(req.params.id);
-  if (!id) return res.status(400).json({ error: 'Ungültige User-ID' });
-
-  const role = parseRole(req.body?.role);
-  if (role === null) return res.status(400).json({ error: 'Ungültige Rolle (0=viewer,1=editor,2=admin)' });
-
-  if (req.user?.id === id && req.user?.role === 2 && role !== 2) {
-    return res.status(400).json({ error: 'Du kannst dir selbst die Adminrolle nicht entziehen.' });
+  const ad = getAdClient();
+  if (!ad) {
+    return res.status(503).json({
+      error: 'LDAP-Suche ist aktuell nicht konfiguriert.',
+    });
   }
 
   try {
-    const { rows } = await pool.query(
-      `
-      UPDATE users
-      SET role = $2
-      WHERE id = $1
-      RETURNING id, "adGuid", username, role, "createdAt", "lastLogin", "isActivated"
-      `,
-      [id, role]
-    );
+    const results = await ldapSearchUsers(ad, q);
+    const formatted = results.map((user) => ({
+      username: user.sAMAccountName || user.userPrincipalName || '',
+      displayName:
+        user.displayName ||
+        [user.givenName, user.sn].filter(Boolean).join(' ') ||
+        user.sAMAccountName ||
+        user.userPrincipalName ||
+        'Unbekannter Nutzer',
+      email: user.mail || undefined,
+    }));
 
-    if (rows.length === 0) return res.status(404).json({ error: 'User nicht gefunden' });
-    return res.json({ user: rows[0] });
-  } catch (e) {
-    console.error('[DB ERROR] PATCH /users/:id/role', e);
-    return res.status(500).json({ error: 'Datenbankfehler' });
+    return res.json(formatted.filter((user) => user.username));
+  } catch (error) {
+    console.error('[LDAP SEARCH ERROR]', error);
+    return res.status(502).json({
+      error: 'LDAP-Suche ist derzeit nicht erreichbar.',
+    });
   }
 });
 
+router.get('/users', requireAuth, requireActivated, async (_req, res) => {
+  try {
+    const { rows } = await pool.query(
+      'SELECT id, "adGuid", username, role, "isActivated", "createdAt", "lastLogin" FROM users ORDER BY username ASC'
+    );
+    return res.json(rows);
+  } catch (error) {
+    console.error('[DB ERROR] GET /users', error);
+    return res.status(500).json({ error: 'Nutzer konnten nicht geladen werden.' });
+  }
+});
 
-router.patch('/users/:id/deactivate', requireAuth, requireAdmin, async (req, res) => {
-  const id = parseId(req.params.id);
-  if (!id) return res.status(400).json({ error: 'Ungültige User-ID' });
+router.patch('/users/:id/role', requireAuth, requireActivated, requireAdmin, async (req, res) => {
+  const id = parseUserId(req.params.id);
+  const role = normalizeRole(req.body?.role);
 
-  if (req.user?.id === id) {
-    return res.status(400).json({ error: 'Du kannst dich nicht selbst deaktivieren.' });
+  if (!id) {
+    return res.status(400).json({ error: 'Ungueltige Nutzer-ID.' });
+  }
+
+  if (role === null) {
+    return res.status(400).json({ error: 'Rolle muss 0, 1, 2 oder viewer/editor/admin sein.' });
   }
 
   try {
     const { rows } = await pool.query(
-      `
-      UPDATE users
-      SET "isActivated" = FALSE
-      WHERE id = $1
-      RETURNING id, "adGuid", username, role, "createdAt", "lastLogin", "isActivated"
-      `,
-      [id]
+      'UPDATE users SET role = $1 WHERE id = $2 RETURNING id, "adGuid", username, role, "isActivated", "createdAt", "lastLogin"',
+      [role, id]
     );
 
-    if (rows.length === 0) return res.status(404).json({ error: 'User nicht gefunden' });
-    return res.json({ user: rows[0] });
-  } catch (e) {
-    console.error('[DB ERROR] PATCH /users/:id/deactivate', e);
-    return res.status(500).json({ error: 'Datenbankfehler' });
-  }
-});
-
-router.get('/users', requireAuth, requireEditor, async (req, res) => {
-  try {
-    const q = String(req.query.q || '').trim();
-
-    if (!q) {
-      const { rows } = await pool.query(
-        `SELECT id, "adGuid", username, role, "createdAt", "lastLogin", "isActivated"
-         FROM users
-         ORDER BY username ASC`
-      );
-      return res.json({ users: rows });
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Nutzer nicht gefunden.' });
     }
 
+    return res.json({ user: rows[0] });
+  } catch (error) {
+    console.error('[DB ERROR] PATCH /users/:id/role', error);
+    return res.status(500).json({ error: 'Rolle konnte nicht aktualisiert werden.' });
+  }
+});
+
+router.patch('/users/:id/activate', requireAuth, requireActivated, requireAdmin, async (req, res) => {
+  const id = parseUserId(req.params.id);
+
+  if (!id) {
+    return res.status(400).json({ error: 'Ungueltige Nutzer-ID.' });
+  }
+
+  if (typeof req.body?.activated !== 'boolean') {
+    return res.status(400).json({ error: 'activated muss true oder false sein.' });
+  }
+
+  if (Number(req.user.id) === id && req.body.activated === false) {
+    return res.status(400).json({ error: 'Du kannst deinen eigenen Account nicht deaktivieren.' });
+  }
+
+  try {
     const { rows } = await pool.query(
-      `SELECT id, "adGuid", username, role, "createdAt", "lastLogin", "isActivated"
-       FROM users
-       WHERE username ILIKE $1
-       ORDER BY username ASC`,
-      [`%${q}%`]
+      'UPDATE users SET "isActivated" = $1 WHERE id = $2 RETURNING id, "adGuid", username, role, "isActivated", "createdAt", "lastLogin"',
+      [req.body.activated, id]
     );
-    return res.json({ users: rows });
-  } catch (e) {
-    console.error('[DB ERROR] GET /users', e);
-    return res.status(500).json({ error: 'Datenbankfehler' });
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Nutzer nicht gefunden.' });
+    }
+
+    return res.json({ user: rows[0] });
+  } catch (error) {
+    console.error('[DB ERROR] PATCH /users/:id/activate', error);
+    return res.status(500).json({ error: 'Aktivierungsstatus konnte nicht aktualisiert werden.' });
+  }
+});
+
+router.delete('/users/:id', requireAuth, requireActivated, requireAdmin, async (req, res) => {
+  const id = parseUserId(req.params.id);
+
+  if (!id) {
+    return res.status(400).json({ error: 'Ungueltige Nutzer-ID.' });
+  }
+
+  if (Number(req.user.id) === id) {
+    return res.status(400).json({ error: 'Du kannst deinen eigenen Account nicht loeschen.' });
+  }
+
+  try {
+    const { rowCount } = await pool.query('DELETE FROM users WHERE id = $1', [id]);
+
+    if (rowCount === 0) {
+      return res.status(404).json({ error: 'Nutzer nicht gefunden.' });
+    }
+
+    return res.json({ deleted: true });
+  } catch (error) {
+    console.error('[DB ERROR] DELETE /users/:id', error);
+    return res.status(500).json({ error: 'Nutzer konnte nicht geloescht werden.' });
   }
 });
 
