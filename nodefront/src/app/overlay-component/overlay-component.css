@@ -24,10 +24,21 @@
   border: 3px solid var(--tc);
 }
 
+.overlay-wide {
+  width: min(1000px, 92vw);
+}
+
 .selection {
   display: flex;
   flex-direction: column;
-  margin-bottom: 20px;
+  gap: 8px;
+  margin-bottom: 0;
+}
+
+.selection select,
+.selection input {
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .selection .options {
@@ -37,17 +48,11 @@
   flex-wrap: wrap;
 }
 
-label {
+.selection label {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 8px;
-  cursor: pointer;
-  font-size: 1.5em;
-}
-
-h2 {
-  margin-top: 0px;
+  font-size: 1em;
 }
 
 p {
@@ -58,4 +63,65 @@ p {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 20px;
+}
+
+.filter-grid-top {
+  margin-bottom: 0;
+}
+
+.filter-field {
+  margin-bottom: 0;
+}
+
+.filter-section {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.section-label {
+  font-size: 1em;
+}
+
+.overlay-divider {
+  margin: 20px 0;
+}
+
+.overlay-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.overlay-actions-right {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.selection input,
+.selection select {
+  min-height: 20px;
+}
+
+@media (max-width: 900px) {
+  .filter-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .overlay-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .overlay-actions-right {
+    justify-content: stretch;
+  }
 }

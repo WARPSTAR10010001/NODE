@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   FormsModule,
@@ -8,15 +8,14 @@ import {
   UntypedFormGroup,
   Validators
 } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Subject, debounceTime, distinctUntilChanged, switchMap, takeUntil, tap, of } from 'rxjs';
 
 import { DeviceService } from '../device-service';
 import { Category, CategoryService } from '../category-service';
 import { Status, StatusService } from '../status-service';
 import { Location, LocationService } from '../location-service';
 import { NetworkEnvironment, NetworkEnvironmentService } from '../network-environment-service';
-import { Depreciation, DepreciationService } from '../depreciation-service';
-import { UserRecord, UserService } from '../user-service';
+import { LdapUser, UserService } from '../user-service';
 import { OverlayService } from '../overlay-service';
 
 type EntityType =
@@ -35,11 +34,11 @@ const OPTIONAL_MAC_PATTERN = /^$|^([0-9A-Fa-f]{2}([-:])){5}[0-9A-Fa-f]{2}$/;
 
 @Component({
   selector: 'app-create-component',
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule],
   templateUrl: './create-component.html',
   styleUrls: ['./create-component.css']
 })
-export class CreateComponent implements OnInit {
+export class CreateComponent implements OnInit, OnDestroy {
   protected readonly entityOptions: EntityOption[] = [
     { id: 'device', label: 'Gerät' },
     { id: 'category', label: 'Kategorie' },
@@ -52,11 +51,15 @@ export class CreateComponent implements OnInit {
   statuses: Status[] = [];
   locations: Location[] = [];
   networkEnvironments: NetworkEnvironment[] = [];
-  depreciations: Depreciation[] = [];
-  users: UserRecord[] = [];
   entityType: EntityType = 'device';
   form!: UntypedFormGroup;
   submitting = false;
+  ldapResults: LdapUser[] = [];
+  ldapLoading = false;
+  assignedSearch = '';
+
+  private assignedSearch$ = new Subject<string>();
+  private destroy$ = new Subject<void>();
 
   constructor(
     private fb: UntypedFormBuilder,
@@ -65,7 +68,6 @@ export class CreateComponent implements OnInit {
     private statusService: StatusService,
     private locationService: LocationService,
     private networkEnvService: NetworkEnvironmentService,
-    private depreciationService: DepreciationService,
     private userService: UserService,
     private overlay: OverlayService
   ) {}
@@ -73,10 +75,12 @@ export class CreateComponent implements OnInit {
   ngOnInit(): void {
     this.loadLookups();
     this.buildForm();
+    this.setupLdapSearch();
   }
 
-  get selectedLabel(): string {
-    return this.entityOptions.find((option) => option.id === this.entityType)?.label ?? 'Eintrag';
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   get macAddresses(): UntypedFormArray {
@@ -88,13 +92,48 @@ export class CreateComponent implements OnInit {
     this.buildForm();
   }
 
-  formatLocation(location: Location): string {
-    return [location.city, location.address, location.houseNumber].filter(Boolean).join(', ');
+  onAssignedSearchChange(value: string): void {
+    this.assignedSearch = value;
+
+    const selected = this.ldapResults.find(
+      (result) => `${result.displayName} (${result.username})` === value
+    );
+
+    if (selected) {
+      this.selectLdapUser(selected);
+      return;
+    }
+
+    this.form.get('assignedToUserId')?.setValue(null);
+    this.assignedSearch$.next(value);
   }
 
-  formatDepreciation(depreciation: Depreciation): string {
-    const unit = depreciation.scale === 'years' ? 'Jahre' : 'Monate';
-    return `${depreciation.time} ${unit}`;
+  selectLdapUser(user: LdapUser): void {
+    this.ldapLoading = true;
+    this.userService.resolveLdapUser(user.username)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: ({ user: resolved }) => {
+          this.form.get('assignedToUserId')?.setValue(resolved.id);
+          this.assignedSearch = `${user.displayName} (${user.username})`;
+          this.ldapResults = [];
+          this.ldapLoading = false;
+        },
+        error: (error) => {
+          this.ldapLoading = false;
+          this.handleError('Resolve LDAP user failed', error, 'LDAP-Nutzer konnte nicht übernommen werden.');
+        }
+      });
+  }
+
+  clearAssignedUser(): void {
+    this.form.get('assignedToUserId')?.setValue(null);
+    this.assignedSearch = '';
+    this.ldapResults = [];
+  }
+
+  formatLocation(location: Location): string {
+    return [location.city, location.address, location.houseNumber].filter(Boolean).join(', ');
   }
 
   controlInvalid(name: string): boolean {
@@ -113,7 +152,18 @@ export class CreateComponent implements OnInit {
 
   removeMacAddress(index: number): void {
     this.macAddresses.removeAt(index);
-    if (this.macAddresses.length === 0) this.addMacAddress();
+    if (this.macAddresses.length === 0) {
+      this.addMacAddress();
+    }
+  }
+
+  clearForm(showOverlay = true): void {
+    this.buildForm();
+    this.assignedSearch = '';
+    this.ldapResults = [];
+    if (showOverlay) {
+      this.overlay.showOverlay('info', 'Formular wurde geleert.');
+    }
   }
 
   onSubmit(): void {
@@ -124,60 +174,67 @@ export class CreateComponent implements OnInit {
     switch (this.entityType) {
       case 'device':
         this.deviceService.create(this.buildDevicePayload()).subscribe({
-          next: ({ device }) => {
-            this.handleSuccess(
-              `Gerät "${device.name}" wurde erstellt.`,
-              '/devices'
-            );
-          },
+          next: ({ device }) => this.handleSuccess(`Gerät "${device.name}" wurde erstellt.`, '/devices'),
           error: (error) => this.handleError('Create device failed', error, 'Gerät konnte nicht erstellt werden.')
         });
         break;
       case 'category':
         this.categoryService.create(this.buildNameDescriptionPayload()).subscribe({
-          next: ({ category }) => {
-            this.handleSuccess(
-              `Kategorie "${category.name}" wurde erstellt.`,
-              '/manage/category'
-            );
-          },
+          next: ({ category }) => this.handleSuccess(`Kategorie "${category.name}" wurde erstellt.`, '/manage/category'),
           error: (error) => this.handleError('Create category failed', error, 'Kategorie konnte nicht erstellt werden.')
         });
         break;
       case 'status':
         this.statusService.create(this.buildNameDescriptionPayload()).subscribe({
-          next: ({ status }) => {
-            this.handleSuccess(
-              `Status "${status.name}" wurde erstellt.`,
-              '/manage/status'
-            );
-          },
+          next: ({ status }) => this.handleSuccess(`Status "${status.name}" wurde erstellt.`, '/manage/status'),
           error: (error) => this.handleError('Create status failed', error, 'Status konnte nicht erstellt werden.')
         });
         break;
       case 'location':
         this.locationService.create(this.buildLocationPayload()).subscribe({
-          next: ({ location }) => {
-            this.handleSuccess(
-              `Standort "${this.formatLocation(location)}" wurde erstellt.`,
-              '/manage/location'
-            );
-          },
+          next: ({ location }) => this.handleSuccess(`Standort "${this.formatLocation(location)}" wurde erstellt.`, '/manage/location'),
           error: (error) => this.handleError('Create location failed', error, 'Standort konnte nicht erstellt werden.')
         });
         break;
       case 'network-environment':
         this.networkEnvService.create(this.buildNameOnlyPayload()).subscribe({
-          next: ({ networkEnvironment }) => {
-            this.handleSuccess(
-              `Netzwerkumgebung "${networkEnvironment.name}" wurde erstellt.`,
-              '/manage/network-environment'
-            );
-          },
+          next: ({ networkEnvironment }) => this.handleSuccess(`Netzwerkumgebung "${networkEnvironment.name}" wurde erstellt.`, '/manage/network-environment'),
           error: (error) => this.handleError('Create network environment failed', error, 'Netzwerkumgebung konnte nicht erstellt werden.')
         });
         break;
     }
+  }
+
+  private setupLdapSearch(): void {
+    this.assignedSearch$
+      .pipe(
+        debounceTime(200),
+        distinctUntilChanged(),
+        tap((query) => {
+          this.ldapLoading = query.trim().length >= 2;
+          if (query.trim().length < 2) {
+            this.ldapResults = [];
+          }
+        }),
+        switchMap((query) => {
+          if (query.trim().length < 2) {
+            return of([] as LdapUser[]);
+          }
+
+          return this.userService.searchLdap(query);
+        }),
+        takeUntil(this.destroy$)
+      )
+      .subscribe({
+        next: (results) => {
+          this.ldapResults = results;
+          this.ldapLoading = false;
+        },
+        error: (error) => {
+          this.ldapLoading = false;
+          this.handleError('LDAP search failed', error, 'LDAP-Suche konnte nicht geladen werden.');
+        }
+      });
   }
 
   private loadLookups(): void {
@@ -197,14 +254,6 @@ export class CreateComponent implements OnInit {
       next: (res) => (this.networkEnvironments = res.networkEnvironments),
       error: (err) => console.error('Load network environments failed', err)
     });
-    this.depreciationService.list().subscribe({
-      next: (res) => (this.depreciations = res.depreciations),
-      error: (err) => console.error('Load depreciations failed', err)
-    });
-    this.userService.getUsers().subscribe({
-      next: (res) => (this.users = res.filter((user) => user.isActivated)),
-      error: (err) => console.error('Load users failed', err)
-    });
   }
 
   private buildForm(): void {
@@ -220,7 +269,8 @@ export class CreateComponent implements OnInit {
           purchase: [''],
           price: [null],
           supplier: [''],
-          depreciationId: [null],
+          depreciationTime: [null],
+          depreciationScale: [''],
           accountingType: ['konsumtiv', Validators.required],
           assignedToUserId: [null],
           locationId: [null],
@@ -276,7 +326,8 @@ export class CreateComponent implements OnInit {
       purchase: raw.purchase || null,
       price: this.normalizeNumber(raw.price),
       supplier: this.normalizeText(raw.supplier),
-      depreciationId: this.normalizeNumber(raw.depreciationId),
+      depreciationTime: this.normalizeNumber(raw.depreciationTime),
+      depreciationScale: this.normalizeText(raw.depreciationScale),
       accountingType: raw.accountingType || 'konsumtiv',
       assignedToUserId: this.normalizeNumber(raw.assignedToUserId),
       locationId: this.normalizeNumber(raw.locationId),
@@ -330,7 +381,7 @@ export class CreateComponent implements OnInit {
   private handleSuccess(message: string, route: string): void {
     this.submitting = false;
     this.loadLookups();
-    this.buildForm();
+    this.clearForm(false);
     this.overlay.showOverlay('success', message, null, {
       actions: [
         { label: 'Schließen', closeOnly: true },

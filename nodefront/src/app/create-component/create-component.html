@@ -1,7 +1,7 @@
 <div class="create-page">
   <div class="title">
     <hr>
-    <h1>{{ selectedLabel }} erstellen</h1>
+    <h1>Creator</h1>
   </div>
 
   <div class="topbar">
@@ -42,14 +42,21 @@
             }
           </select>
         </div>
-        <div class="form-field">
-          <label for="assignedToUserId">Benutzer</label>
-          <select id="assignedToUserId" formControlName="assignedToUserId">
-            <option [ngValue]="null">Keine Zuweisung</option>
-            @for (user of users; track user.id) {
-            <option [ngValue]="user.id">{{ user.username }}</option>
+        <div class="form-field ldap-field">
+          <label for="assignedSearch">Zugewiesen an</label>
+          <div class="ldap-input-row" [class.with-clear-button]="!!form.get('assignedToUserId')?.value">
+            <input id="assignedSearch" list="ldap-users" [ngModel]="assignedSearch"
+              [ngModelOptions]="{ standalone: true }" [readonly]="!!form.get('assignedToUserId')?.value"
+              (ngModelChange)="onAssignedSearchChange($event)">
+            @if (form.get('assignedToUserId')?.value) {
+            <button type="button" class="danger" (click)="clearAssignedUser()">X</button>
             }
-          </select>
+          </div>
+          <datalist id="ldap-users">
+            @for (result of ldapResults; track result.username) {
+            <option [value]="result.displayName + ' (' + result.username + ')'"></option>
+            }
+          </datalist>
         </div>
         <div class="form-field">
           <label for="manufacturer">Hersteller</label>
@@ -98,14 +105,24 @@
           </select>
         </div>
         <div class="form-field">
-          <label for="depreciationId">Abschreibung</label>
-          <select id="depreciationId" formControlName="depreciationId">
-            <option [ngValue]="null">Keine</option>
-            @for (depreciation of depreciations; track depreciation.id) {
-            <option [ngValue]="depreciation.id">{{ formatDepreciation(depreciation) }}</option>
-            }
+          <label for="depreciationTime">Abschreibung Zeit</label>
+          <input id="depreciationTime" type="number" min="0" step="1" formControlName="depreciationTime">
+        </div>
+        <div class="form-field">
+          <label for="depreciationScale">Abschreibung Einheit</label>
+          <select id="depreciationScale" formControlName="depreciationScale">
+            <option value="">Keine</option>
+            <option value="months">Monate</option>
+            <option value="years">Jahre</option>
           </select>
         </div>
+      </div>
+
+      <hr class="section-divider">
+
+      <h1>Für Drucker</h1>
+
+      <div class="field-grid printer-grid">
         <div class="form-field">
           <label for="contractType">Vertragsart</label>
           <select id="contractType" formControlName="contractType">
@@ -143,20 +160,20 @@
           <input id="patchPanelLabel" formControlName="patchPanelLabel">
         </div>
       </div>
-
+      <hr class="section-divider">
       <div class="mac-block" formArrayName="macAddresses">
         <div class="subbar">
-          <h2>MAC-Adressen</h2>
-          <button type="button" (click)="addMacAddress()">+</button>
+          <h1>MAC-Adressen</h1>
+          <button type="button" (click)="addMacAddress()">Adresse hinzufügen</button>
         </div>
         <div class="mac-list">
-          @for (macControl of macAddresses.controls; track $index) {
+          @for (macControl of macAddresses.controls; track macControl; let index = $index) {
           <div class="mac-row">
-            <div class="form-field compact" [class.invalid]="macControlInvalid($index)">
-              <label [for]="'mac-' + $index">MAC {{ $index + 1 }}</label>
-              <input [id]="'mac-' + $index" [formControlName]="$index" placeholder="00:11:22:33:44:55">
+            <div class="form-field compact" [class.invalid]="macControlInvalid(index)">
+              <label [for]="'mac-' + index">Adresse #{{ index + 1 }}</label>
+              <input [id]="'mac-' + index" [formControlName]="index" placeholder="00:11:22:33:44:55">
             </div>
-            <button type="button" class="danger" (click)="removeMacAddress($index)">X</button>
+            <button type="button" class="danger" (click)="removeMacAddress(index)">X</button>
           </div>
           }
         </div>
@@ -167,7 +184,6 @@
       <h1>Notizen</h1>
       <div class="field-grid single-column">
         <div class="form-field full-width">
-          <label for="notes">Notizen</label>
           <textarea id="notes" rows="6" formControlName="notes"></textarea>
         </div>
       </div>
@@ -176,7 +192,7 @@
 
     @if (entityType === 'category' || entityType === 'status') {
     <section class="form-section">
-      <h1>{{ selectedLabel }}</h1>
+      <h1>{{ entityType === 'category' ? 'Kategorie' : 'Status' }}</h1>
       <div class="field-grid single-column">
         <div class="form-field" [class.invalid]="controlInvalid('name')">
           <label [for]="entityType + '-name'">Name *</label>
@@ -227,7 +243,7 @@
     }
 
     <div class="form-actions">
-      <button type="button" routerLink="/devices" class="danger">Abbrechen</button>
+      <button type="button" (click)="clearForm()" class="danger">Formular leeren</button>
       <button type="submit" class="confirm" [disabled]="form.invalid || submitting">
         @if (submitting) { Speichere... } @else { Erstellen }
       </button>

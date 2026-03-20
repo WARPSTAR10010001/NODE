@@ -1,0 +1,96 @@
+.login-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.login-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 420px) minmax(0, 1fr);
+  gap: 40px;
+  align-items: start;
+}
+
+.login-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-section {
+  background-color: var(--bgc);
+  border: 3px solid var(--tc);
+  border-radius: 5px;
+  padding: 20px;
+}
+
+.field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 20px;
+}
+
+.single-column {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-field input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-start;
+  gap: 12px;
+}
+
+.login-aside {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 20px 0 0;
+}
+
+.acronym-line {
+  display: flex;
+  align-items: baseline;
+  gap: 18px;
+}
+
+.acronym-letter {
+  min-width: 36px;
+  color: var(--blue);
+  font-size: 3em;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.acronym-word {
+  color: var(--tc);
+  font-size: 1.5em;
+  line-height: 1.1;
+}
+
+@media (max-width: 1000px) {
+  .login-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 30px;
+  }
+
+  .login-aside {
+    padding: 0;
+  }
+}

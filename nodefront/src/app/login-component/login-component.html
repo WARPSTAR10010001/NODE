@@ -1,22 +1,52 @@
-<div class="cc">
+<div class="login-page">
   <div class="title">
     <hr>
     <h1>Anmeldung</h1>
   </div>
-  <form (ngSubmit)="submit()" #f="ngForm">
-    <label>
-      Anmeldename (J-Nummer)
-      <br>
-      <input type="text" name="username" [(ngModel)]="username" autocomplete="username">
-    </label>
-    <br>
-    <label>
-      Passwort
-      <br>
-      <input type="password" name="password" [(ngModel)]="password" autocomplete="current-password">
-    </label>
-    <div class="button-row">
-      <button class="primary" type="submit" [disabled]="loading || !f.valid">Anmelden</button>
+
+  <div class="login-layout">
+    <div class="login-panel">
+      <form class="login-form" (ngSubmit)="submit()" #f="ngForm">
+        <section class="form-section">
+          <div class="field-grid single-column">
+            <div class="form-field">
+              <label for="username">Anmeldename (J-Nummer)</label>
+              <input
+                id="username"
+                type="text"
+                name="username"
+                [(ngModel)]="username"
+                autocomplete="username"
+                placeholder="J123456"
+                required>
+            </div>
+
+            <div class="form-field">
+              <label for="password">Passwort</label>
+              <input
+                id="password"
+                type="password"
+                name="password"
+                [(ngModel)]="password"
+                autocomplete="current-password"
+                placeholder="Passwort"
+                required>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" [disabled]="loading || !f.valid">
+                {{ loading ? 'Anmeldung laeuft...' : 'Anmelden' }}
+              </button>
+            </div>
+          </div>
+        </section>
+      </form>
     </div>
-  </form>
+    <h1>Willkommen im<br><br>
+      <span style="color:var(--blue)">N</span>exus<br>
+      <span style="color:var(--blue)">O</span>bject<br>
+      <span style="color:var(--blue)">D</span>irectory<br>
+      <span style="color:var(--blue)">E</span>nvironment!<br>
+    </h1>
+  </div>
 </div>

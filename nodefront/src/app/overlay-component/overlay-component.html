@@ -1,72 +1,157 @@
 @if (overlayState.show) {
 <div class="overlay-backdrop">
-    @if (overlayState.type === "style") {
-    <div id="style-overlay" class="overlay">
-        <div class="title">
-            <hr>
-            <h1>Style</h1>
-        </div>
-        <div id="theme-selection" class="selection">
-            <h2>Farbmodus:</h2>
-            <div class="options">
-                <label>
-                    <input type="radio" name="theme" value="light" [checked]="selectedTheme === 'light'"
-                        (change)="changeTheme('light')">
-                    Light
-                </label>
-                <label>
-                    <input type="radio" name="theme" value="dark" [checked]="selectedTheme === 'dark'"
-                        (change)="changeTheme('dark')">
-                    Dark
-                </label>
-            </div>
-        </div>
-        <hr>
-        <div id="contrast-selection" class="selection">
-            <h2>Kontrastauswahl:</h2>
-            <div class="options">
-                <label>
-                    <input type="radio" name="contrast" [checked]="selectedContrast === 'contrast'"
-                        (change)="changeContrast('contrast')">
-                    An
-                </label>
-                <label>
-                    <input type="radio" name="contrast" [checked]="selectedContrast === 'no-contrast'"
-                        (change)="changeContrast('no-contrast')">
-                    Aus
-                </label>
-            </div>
-        </div>
-        <div class="overlay-actions">
-            <button (click)="close()">Schließen</button>
-        </div>
+  @if (overlayState.type === 'style') {
+  <div id="style-overlay" class="overlay">
+    <div class="title">
+      <hr>
+      <h1>Style</h1>
     </div>
-    } @else {
-    <div class="overlay">
-        <div class="title">
-            <hr>
-            <h1>
-                @if (overlayState.type === "error") { Fehler }
-                @else if (overlayState.type === "success") { Erfolg }
-                @else { Info }
-            </h1>
-        </div>
-        <p>{{ overlayState.message }}</p>
-        <div class="overlay-actions">
-            @if (overlayState.actions?.length) {
-                @for (action of overlayState.actions; track action.label) {
-                <button
-                    [class.danger]="action.closeOnly"
-                    [class.confirm]="overlayState.type === 'success' && !action.closeOnly"
-                    (click)="navigate(action.route)">
-                    {{ action.label }}
-                </button>
-                }
-            } @else {
-            <button (click)="close()">Schließen</button>
-            }
-        </div>
+    <div id="theme-selection" class="selection">
+      <h2>Farbmodus:</h2>
+      <div class="options">
+        <label>
+          <input type="radio" name="theme" value="light" [checked]="selectedTheme === 'light'"
+            (change)="changeTheme('light')">
+          Light
+        </label>
+        <label>
+          <input type="radio" name="theme" value="dark" [checked]="selectedTheme === 'dark'"
+            (change)="changeTheme('dark')">
+          Dark
+        </label>
+      </div>
     </div>
-    }
+    <hr>
+    <div id="contrast-selection" class="selection">
+      <h2>Kontrastauswahl:</h2>
+      <div class="options">
+        <label>
+          <input type="radio" name="contrast" [checked]="selectedContrast === 'contrast'"
+            (change)="changeContrast('contrast')">
+          An
+        </label>
+        <label>
+          <input type="radio" name="contrast" [checked]="selectedContrast === 'no-contrast'"
+            (change)="changeContrast('no-contrast')">
+          Aus
+        </label>
+      </div>
+    </div>
+    <div class="overlay-actions">
+      <button (click)="close()">Schließen</button>
+    </div>
+  </div>
+  } @else if (overlayState.type === 'filter' && filterPayload) {
+  <div class="overlay overlay-wide">
+    <div class="title">
+      <hr>
+      <h1>{{ filterPayload.title }}</h1>
+    </div>
+
+    <div class="filter-grid filter-grid-top">
+      <div class="selection filter-field">
+        <label for="overlay-sort-field">Sortieren nach</label>
+        <select id="overlay-sort-field" [ngModel]="filterPayload.sortField" (ngModelChange)="updateSortField($event)">
+          @for (option of filterPayload.sortOptions; track option.value) {
+          <option [ngValue]="option.value">{{ option.label }}</option>
+          }
+        </select>
+      </div>
+      <div class="selection filter-field">
+        <label for="overlay-sort-direction">Reihenfolge</label>
+        <select id="overlay-sort-direction" [ngModel]="filterPayload.sortDirection"
+          (ngModelChange)="updateSortDirection($event)">
+          <option value="asc">Aufsteigend</option>
+          <option value="desc">Absteigend</option>
+        </select>
+      </div>
+    </div>
+
+    <hr class="overlay-divider">
+
+    <div class="filter-grid">
+      @for (field of generalFilterFields; track field.key) {
+      <div class="selection filter-field">
+        <label [for]="'overlay-field-' + field.key">{{ field.label }}</label>
+        @if (field.type === 'select') {
+        <select [id]="'overlay-field-' + field.key" [ngModel]="field.value"
+          (ngModelChange)="updateFilterField(field.key, $event)">
+          @for (option of field.options || []; track option.value) {
+          <option [ngValue]="option.value">{{ option.label }}</option>
+          }
+        </select>
+        } @else {
+        <input [id]="'overlay-field-' + field.key" [type]="field.type" [ngModel]="field.value"
+          (ngModelChange)="updateFilterField(field.key, $event)" [placeholder]="field.placeholder || ''">
+        }
+      </div>
+      }
+    </div>
+
+    <hr class="overlay-divider">
+
+    <div class="filter-section">
+      <div class="section-label">Erstellungsdatum</div>
+      <div class="filter-grid">
+        @for (field of createdDateFields; track field.key) {
+        <div class="selection filter-field">
+          <label [for]="'overlay-field-' + field.key">{{ field.label }}</label>
+          <input [id]="'overlay-field-' + field.key" [type]="field.type" [ngModel]="field.value"
+            (ngModelChange)="updateFilterField(field.key, $event)" [placeholder]="field.placeholder || ''">
+        </div>
+        }
+      </div>
+    </div>
+
+    <hr class="overlay-divider">
+
+    <div class="filter-section">
+      <div class="section-label">Änderungsdatum</div>
+      <div class="filter-grid">
+        @for (field of updatedDateFields; track field.key) {
+        <div class="selection filter-field">
+          <label [for]="'overlay-field-' + field.key">{{ field.label }}</label>
+          <input [id]="'overlay-field-' + field.key" [type]="field.type" [ngModel]="field.value"
+            (ngModelChange)="updateFilterField(field.key, $event)" [placeholder]="field.placeholder || ''">
+        </div>
+        }
+      </div>
+    </div>
+
+    <hr class="overlay-divider">
+
+    <div class="overlay-actions">
+      <button class="danger" (click)="resetFilterOverlay()">Zurücksetzen</button>
+      <div class="overlay-actions-right">
+        <button (click)="close()">Schließen</button>
+        <button class="confirm" (click)="applyFilterOverlay()">Übernehmen</button>
+      </div>
+    </div>
+  </div>
+  } @else {
+  <div class="overlay">
+    <div class="title">
+      <hr>
+      <h1>
+        @if (overlayState.type === 'error') { Fehler }
+        @else if (overlayState.type === 'success') { Erfolg }
+        @else { Info }
+      </h1>
+    </div>
+    <p>{{ overlayState.message }}</p>
+    <div class="overlay-actions">
+      @if (overlayState.actions?.length) {
+      @for (action of overlayState.actions; track action.label) {
+      <button [class.danger]="action.closeOnly" [class.confirm]="overlayState.type === 'success' && !action.closeOnly"
+        (click)="navigate(action.route)">
+        {{ action.label }}
+      </button>
+      }
+      } @else {
+      <button (click)="close()">Schließen</button>
+      }
+    </div>
+  </div>
+  }
 </div>
 }

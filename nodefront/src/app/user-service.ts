@@ -33,4 +33,8 @@ export class UserService {
       params: { q: query }
     });
   }
+
+  resolveLdapUser(username: string): Observable<{ user: UserRecord }> {
+    return this.http.post<{ user: UserRecord }>(`${this.apiUrl}/resolve-ldap`, { username });
+  }
 }

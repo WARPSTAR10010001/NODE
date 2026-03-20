@@ -5,7 +5,8 @@ export type OverlayType =
   | 'style'
   | 'error'
   | 'success'
-  | 'info';
+  | 'info'
+  | 'filter';
 
 export interface OverlayAction {
   label: string;
@@ -13,11 +14,38 @@ export interface OverlayAction {
   closeOnly?: boolean;
 }
 
+export interface OverlaySelectOption {
+  label: string;
+  value: string;
+}
+
+export interface OverlayFilterField {
+  key: string;
+  label: string;
+  type: 'text' | 'number' | 'date' | 'select';
+  value: string;
+  placeholder?: string;
+  options?: OverlaySelectOption[];
+}
+
+export interface OverlayFilterPayload {
+  title: string;
+  sortField: string;
+  sortDirection: 'asc' | 'desc';
+  sortOptions: OverlaySelectOption[];
+  fields: OverlayFilterField[];
+  onFieldChange: (key: string, value: string) => void;
+  onSortFieldChange: (value: string) => void;
+  onSortDirectionChange: (value: 'asc' | 'desc') => void;
+  onReset: () => void;
+  onApply: () => void;
+}
+
 export interface OverlayState {
   show: boolean;
   type: OverlayType;
   message?: string;
-  payload?: any;
+  payload?: unknown;
   actions?: OverlayAction[];
 }
 
@@ -29,7 +57,7 @@ export class OverlayService {
   showOverlay(
     type: OverlayType,
     message?: string,
-    payload?: any,
+    payload?: unknown,
     extra?: Partial<OverlayState>
   ) {
     this.stateSubject.next({

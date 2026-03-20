@@ -9,12 +9,12 @@ import { CreateComponent } from './create-component/create-component';
 import { DocumentationComponent } from './documentation-component/documentation-component';
 import { DashboardComponent } from './dashboard-component/dashboard-component';
 import { ManageComponent } from './manage-component/manage-component';
+import { DetailViewComponent } from './detail-view-component/detail-view-component';
+import { DetailEditComponent } from './detail-edit-component/detail-edit-component';
 
 import { authGuard } from './auth-guard';
 import { activatedGuard } from './activated-guard';
 import { minRoleGuard } from './role-guard';
-import { DetailViewComponent } from './detail-view-component/detail-view-component';
-import { DetailEditComponent } from './detail-edit-component/detail-edit-component';
 
 export const routes: Routes = [
   {
@@ -48,12 +48,12 @@ export const routes: Routes = [
         title: 'Geräte • NODE'
       },
       {
-        path: 'devices/:id',
+        path: 'devices/:inventoryNumber',
         component: DetailViewComponent,
         title: 'Details • NODE'
       },
       {
-        path: 'devices/:id/edit',
+        path: 'devices/:inventoryNumber/edit',
         component: DetailEditComponent,
         canActivate: [minRoleGuard(1)],
         title: 'Bearbeiten • NODE'
@@ -85,8 +85,8 @@ export const routes: Routes = [
         path: '',
         pathMatch: 'full',
         redirectTo: 'dashboard'
-      },
-    ],
+      }
+    ]
   },
   {
     path: '**',

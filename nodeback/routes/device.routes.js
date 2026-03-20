@@ -34,6 +34,35 @@ function normalizeMacArray(value) {
   return undefined;
 }
 
+async function ensureDepreciationId(body) {
+  const directId = toInt(body.depreciationId);
+  if (directId) return directId;
+
+  const time = toInt(body.depreciationTime);
+  const scale = String(body.depreciationScale || '').trim().toLowerCase();
+
+  if (!time && !scale) return null;
+  if (!time || !['months', 'years'].includes(scale)) {
+    throw new Error('depreciationTime und depreciationScale muessen gueltig sein.');
+  }
+
+  const existing = await pool.query(
+    'SELECT id FROM depreciations WHERE time = $1 AND scale = $2 LIMIT 1',
+    [time, scale]
+  );
+
+  if (existing.rows.length > 0) {
+    return existing.rows[0].id;
+  }
+
+  const created = await pool.query(
+    'INSERT INTO depreciations (time, scale) VALUES ($1, $2) RETURNING id',
+    [time, scale]
+  );
+
+  return created.rows[0].id;
+}
+
 const depreciationEndSql = `
 CASE
   WHEN d.purchase IS NULL OR dep.id IS NULL THEN NULL
@@ -247,6 +276,8 @@ router.post('/devices', requireAuth, requireActivated, requireEditor, async (req
   const generatedInventoryNumber = `NODE-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
 
   try {
+    const depreciationId = await ensureDepreciationId(body);
+
     const { rows } = await pool.query(
       `
       INSERT INTO devices (
@@ -281,7 +312,7 @@ router.post('/devices', requireAuth, requireActivated, requireEditor, async (req
         purchaseDate,
         body.price ?? null,
         body.supplier ?? null,
-        toInt(body.depreciationId),
+        depreciationId,
         body.accountingType ?? 'konsumtiv',
         toInt(body.assignedToUserId),
         toInt(body.locationId),
@@ -305,6 +336,9 @@ router.post('/devices', requireAuth, requireActivated, requireEditor, async (req
     console.error('[DB ERROR] POST /devices', error);
     if (error.code === '23505') {
       return res.status(409).json({ error: 'Generierte Inventarnummer existiert bereits. Bitte erneut versuchen.' });
+    }
+    if (String(error.message || '').includes('depreciationTime')) {
+      return res.status(400).json({ error: String(error.message) });
     }
     return res.status(500).json({ error: 'Geraet konnte nicht gespeichert werden.' });
   }

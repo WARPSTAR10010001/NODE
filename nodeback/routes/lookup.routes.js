@@ -20,6 +20,18 @@ function normalizeText(value) {
   return trimmed.length > 0 ? trimmed : null;
 }
 
+function handleLookupMutationError(error, res, messages) {
+  if (error?.code === '23505') {
+    return res.status(409).json({ error: messages.duplicate });
+  }
+
+  if (error?.code === '23503') {
+    return res.status(409).json({ error: 'Kann Datenstruktur nicht löschen, weil Datenstruktur wurde an Geräte zugewiesen.' });
+  }
+
+  return res.status(500).json({ error: messages.generic });
+}
+
 async function handleGet(table, key, orderBy, res) {
   try {
     const { rows } = await pool.query(`SELECT * FROM ${table} ORDER BY ${orderBy} ASC`);
@@ -50,7 +62,10 @@ router.post('/categories', requireAuth, requireActivated, requireEditor, async (
     return res.status(201).json({ category: rows[0] });
   } catch (error) {
     console.error('[DB ERROR] POST /categories', error);
-    return res.status(500).json({ error: 'Kategorie konnte nicht gespeichert werden.' });
+    return handleLookupMutationError(error, res, {
+      duplicate: 'Kategorie existiert bereits.',
+      generic: 'Kategorie konnte nicht gespeichert werden.'
+    });
   }
 });
 
@@ -78,7 +93,10 @@ router.patch('/categories/:id', requireAuth, requireActivated, requireEditor, as
     return res.json({ category: rows[0] });
   } catch (error) {
     console.error('[DB ERROR] PATCH /categories/:id', error);
-    return res.status(500).json({ error: 'Kategorie konnte nicht aktualisiert werden.' });
+    return handleLookupMutationError(error, res, {
+      duplicate: 'Kategorie existiert bereits.',
+      generic: 'Kategorie konnte nicht aktualisiert werden.'
+    });
   }
 });
 
@@ -92,7 +110,10 @@ router.delete('/categories/:id', requireAuth, requireActivated, requireAdmin, as
     return res.json({ deleted: true });
   } catch (error) {
     console.error('[DB ERROR] DELETE /categories/:id', error);
-    return res.status(409).json({ error: 'Kategorie kann nicht geloescht werden, solange sie noch verwendet wird.' });
+    return handleLookupMutationError(error, res, {
+      duplicate: 'Kategorie existiert bereits.',
+      generic: 'Kategorie konnte nicht geloescht werden.'
+    });
   }
 });
 
@@ -116,7 +137,10 @@ router.post('/statuses', requireAuth, requireActivated, requireEditor, async (re
     return res.status(201).json({ status: rows[0] });
   } catch (error) {
     console.error('[DB ERROR] POST /statuses', error);
-    return res.status(500).json({ error: 'Status konnte nicht gespeichert werden.' });
+    return handleLookupMutationError(error, res, {
+      duplicate: 'Status existiert bereits.',
+      generic: 'Status konnte nicht gespeichert werden.'
+    });
   }
 });
 
@@ -144,7 +168,10 @@ router.patch('/statuses/:id', requireAuth, requireActivated, requireEditor, asyn
     return res.json({ status: rows[0] });
   } catch (error) {
     console.error('[DB ERROR] PATCH /statuses/:id', error);
-    return res.status(500).json({ error: 'Status konnte nicht aktualisiert werden.' });
+    return handleLookupMutationError(error, res, {
+      duplicate: 'Status existiert bereits.',
+      generic: 'Status konnte nicht aktualisiert werden.'
+    });
   }
 });
 
@@ -158,7 +185,10 @@ router.delete('/statuses/:id', requireAuth, requireActivated, requireAdmin, asyn
     return res.json({ deleted: true });
   } catch (error) {
     console.error('[DB ERROR] DELETE /statuses/:id', error);
-    return res.status(409).json({ error: 'Status kann nicht geloescht werden, solange er noch verwendet wird.' });
+    return handleLookupMutationError(error, res, {
+      duplicate: 'Status existiert bereits.',
+      generic: 'Status konnte nicht geloescht werden.'
+    });
   }
 });
 
@@ -190,7 +220,10 @@ router.post('/locations', requireAuth, requireActivated, requireEditor, async (r
     return res.status(201).json({ location: rows[0] });
   } catch (error) {
     console.error('[DB ERROR] POST /locations', error);
-    return res.status(500).json({ error: 'Standort konnte nicht gespeichert werden.' });
+    return handleLookupMutationError(error, res, {
+      duplicate: 'Standort existiert bereits.',
+      generic: 'Standort konnte nicht gespeichert werden.'
+    });
   }
 });
 
@@ -224,7 +257,10 @@ router.patch('/locations/:id', requireAuth, requireActivated, requireEditor, asy
     return res.json({ location: rows[0] });
   } catch (error) {
     console.error('[DB ERROR] PATCH /locations/:id', error);
-    return res.status(500).json({ error: 'Standort konnte nicht aktualisiert werden.' });
+    return handleLookupMutationError(error, res, {
+      duplicate: 'Standort existiert bereits.',
+      generic: 'Standort konnte nicht aktualisiert werden.'
+    });
   }
 });
 
@@ -238,7 +274,10 @@ router.delete('/locations/:id', requireAuth, requireActivated, requireAdmin, asy
     return res.json({ deleted: true });
   } catch (error) {
     console.error('[DB ERROR] DELETE /locations/:id', error);
-    return res.status(409).json({ error: 'Standort kann nicht geloescht werden, solange er noch verwendet wird.' });
+    return handleLookupMutationError(error, res, {
+      duplicate: 'Standort existiert bereits.',
+      generic: 'Standort konnte nicht geloescht werden.'
+    });
   }
 });
 
@@ -277,7 +316,10 @@ router.post('/network-environments', requireAuth, requireActivated, requireEdito
     return res.status(201).json({ networkEnvironment: rows[0] });
   } catch (error) {
     console.error('[DB ERROR] POST /network-environments', error);
-    return res.status(500).json({ error: 'Netzwerkumgebung konnte nicht gespeichert werden.' });
+    return handleLookupMutationError(error, res, {
+      duplicate: 'Netzwerkumgebung existiert bereits.',
+      generic: 'Netzwerkumgebung konnte nicht gespeichert werden.'
+    });
   }
 });
 
@@ -302,7 +344,10 @@ router.patch('/network-environments/:id', requireAuth, requireActivated, require
     return res.json({ networkEnvironment: rows[0] });
   } catch (error) {
     console.error('[DB ERROR] PATCH /network-environments/:id', error);
-    return res.status(500).json({ error: 'Netzwerkumgebung konnte nicht aktualisiert werden.' });
+    return handleLookupMutationError(error, res, {
+      duplicate: 'Netzwerkumgebung existiert bereits.',
+      generic: 'Netzwerkumgebung konnte nicht aktualisiert werden.'
+    });
   }
 });
 
@@ -316,7 +361,10 @@ router.delete('/network-environments/:id', requireAuth, requireActivated, requir
     return res.json({ deleted: true });
   } catch (error) {
     console.error('[DB ERROR] DELETE /network-environments/:id', error);
-    return res.status(409).json({ error: 'Netzwerkumgebung kann nicht geloescht werden, solange sie noch verwendet wird.' });
+    return handleLookupMutationError(error, res, {
+      duplicate: 'Netzwerkumgebung existiert bereits.',
+      generic: 'Netzwerkumgebung konnte nicht geloescht werden.'
+    });
   }
 });
 

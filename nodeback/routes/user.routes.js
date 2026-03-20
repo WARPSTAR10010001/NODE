@@ -56,6 +56,11 @@ function parseUserId(rawId) {
   return Number.isInteger(id) && id > 0 ? id : null;
 }
 
+function normalizeUsername(value) {
+  const trimmed = String(value || '').trim().toLowerCase();
+  return trimmed || null;
+}
+
 function ldapSearchUsers(ad, query) {
   const escapedQuery = query.replace(/[\\*()]/g, '\\$&');
   const filter = `(|(sn=*${escapedQuery}*)(givenName=*${escapedQuery}*)(displayName=*${escapedQuery}*)(sAMAccountName=*${escapedQuery}*)(userPrincipalName=*${escapedQuery}*)(mail=*${escapedQuery}*))`;
@@ -120,6 +125,37 @@ router.get('/users', requireAuth, requireActivated, async (_req, res) => {
   } catch (error) {
     console.error('[DB ERROR] GET /users', error);
     return res.status(500).json({ error: 'Nutzer konnten nicht geladen werden.' });
+  }
+});
+
+router.post('/users/resolve-ldap', requireAuth, requireActivated, async (req, res) => {
+  const username = normalizeUsername(req.body?.username);
+
+  if (!username) {
+    return res.status(400).json({ error: 'username ist erforderlich.' });
+  }
+
+  try {
+    const existing = await pool.query(
+      'SELECT id, "adGuid", username, role, "isActivated", "createdAt", "lastLogin" FROM users WHERE LOWER(username) = LOWER($1) LIMIT 1',
+      [username]
+    );
+
+    if (existing.rows.length > 0) {
+      return res.json({ user: existing.rows[0] });
+    }
+
+    const { rows } = await pool.query(
+      `INSERT INTO users ("adGuid", username, role, "createdAt", "lastLogin", "isActivated")
+       VALUES ($1, $2, 0, NOW(), NOW(), FALSE)
+       RETURNING id, "adGuid", username, role, "isActivated", "createdAt", "lastLogin"`,
+      [username, username]
+    );
+
+    return res.status(201).json({ user: rows[0] });
+  } catch (error) {
+    console.error('[DB ERROR] POST /users/resolve-ldap', error);
+    return res.status(500).json({ error: 'LDAP-Nutzer konnte nicht aufgeloest werden.' });
   }
 });
 

@@ -24,6 +24,10 @@
   gap: 8px;
 }
 
+.type-field select {
+  width: 360px;
+}
+
 .create-form {
   display: flex;
   flex-direction: column;
@@ -69,10 +73,41 @@
   color: var(--red);
 }
 
-.mac-block {
-  margin-top: 20px;
-  padding-top: 20px;
-  border-top: 2px solid var(--tc);
+.ldap-field {
+  gap: 10px;
+}
+
+.ldap-input-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+  width: 100%;
+}
+
+.ldap-input-row.with-clear-button {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.ldap-input-row input {
+  min-width: 0;
+  width: 100%;
+}
+
+.ldap-input-row input[readonly] {
+  opacity: 0.8;
+}
+
+.section-divider {
+  margin: 20px 0 18px;
+}
+
+.printer-header {
+  font-size: 1.8em;
+  margin: 18px 0 16px;
+}
+
+.printer-grid {
+  padding-top: 0;
 }
 
 .subbar {
@@ -80,7 +115,6 @@
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  margin-bottom: 16px;
 }
 
 .mac-list {
@@ -100,7 +134,8 @@
   min-height: 24px;
 }
 
-.form-actions {
+.form-actions,
+.action-group {
   display: flex;
   justify-content: space-between;
   gap: 12px;

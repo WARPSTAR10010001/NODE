@@ -72,6 +72,7 @@ export class ManageComponent implements OnInit {
         houseNumber: location.houseNumber ?? '',
         room: location.room ?? ''
       };
+      this.overlay.showOverlay('info', 'Bearbeitung gestartet.');
       return;
     }
 
@@ -80,6 +81,8 @@ export class ManageComponent implements OnInit {
       name: base.name ?? '',
       description: 'description' in base ? (base.description ?? '') : ''
     };
+
+    this.overlay.showOverlay('info', 'Bearbeitung gestartet.');
   }
 
   cancelEdit(): void {
