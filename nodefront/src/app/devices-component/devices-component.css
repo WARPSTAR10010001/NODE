@@ -2,122 +2,180 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
-}
-
-.devices-toolbar,
-.device-table-card,
-.state-card,
-.pagination-bar {
-  background-color: var(--bgc);
-  border: 3px solid var(--tc);
-  border-radius: 5px;
-  padding: 20px;
-}
-
-.devices-toolbar,
-.pagination-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 20px;
-}
-
-.pagination-copy {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  flex-wrap: wrap;
-  font-size: 0.95em;
-  font-weight: 400;
-  white-space: nowrap;
-}
-
-.state-card h2 {
-  margin: 0;
-}
-
-.state-card p {
-  margin: 0;
-}
-
-.search-bar,
-.pagination-tools,
-.pagination-controls,
-.page-size-group {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
+  width: 100%;
 }
 
 .search-bar {
+  display: flex;
+  flex-direction: column;
   width: 100%;
-  align-items: center;
+  padding: 20px;
+  border: 3px solid var(--tc);
+  border-radius: 5px;
+  box-sizing: border-box;
 }
 
-.search-bar input {
+.search-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.search-label {
+  white-space: nowrap;
+}
+
+.search-controls input {
   flex: 1;
   min-width: 0;
   width: 100%;
   box-sizing: border-box;
 }
 
-.pagination-tools {
-  align-items: center;
-  justify-content: flex-end;
+.search-controls > button:last-child {
+  flex: 0 0 auto;
 }
 
-.page-size-group button.active,
-.pagination-controls button.active {
-  background-color: var(--blue) !important;
-  color: var(--bgc) !important;
-  border-color: var(--blue) !important;
+.state-card h2,
+.state-card p {
+  margin: 0;
+}
+
+.state-card,
+.device-list-card {
+  border: 3px solid var(--tc);
+  border-radius: 5px;
+  box-sizing: border-box;
+}
+
+.state-card {
+  padding: 20px;
 }
 
 .table-wrap {
   overflow-x: auto;
+  width: 100%;
+  padding: 8px 20px 12px;
+  box-sizing: border-box;
 }
 
 .device-table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: auto;
 }
 
 .device-table th,
 .device-table td {
   text-align: left;
   padding: 14px 12px;
-  border-bottom: 2px solid var(--tc);
   vertical-align: middle;
-  font-size: 1.15em;
+  white-space: nowrap;
+}
+
+.device-table td {
+  font-size: 1.45em;
+  white-space: nowrap;
 }
 
 .device-table th {
-  white-space: nowrap;
+  color: var(--blue);
   font-size: 1.2em;
 }
 
-.device-table tbody tr:last-child td {
-  border-bottom: none;
+.table-header-divider td {
+  padding: 0;
 }
 
-.table-actions {
+.table-header-divider hr {
+  margin: 0;
+  border-width: 2px;
+  border-color: var(--blue);
+}
+
+.device-table td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.device-row-divider td {
+  padding: 0;
+}
+
+.device-row-divider hr {
+  margin: 0;
+  border-width: 2px;
+}
+
+.device-row-divider + tr td {
+  padding-top: 14px;
+}
+
+.table-header-divider + tbody tr:first-child td {
+  padding-top: 14px;
+}
+
+.device-actions {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
 }
 
-@media (max-width: 1100px) {
-  .devices-toolbar,
-  .pagination-bar {
+.device-actions button {
+  font-size: 1em;
+}
+
+.pagination-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 0;
+}
+
+.pagination-summary,
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  text-align: center;
+}
+
+.pagination-summary {
+  font-size: 1.05em;
+}
+
+.summary-separator {
+  font-weight: 700;
+}
+
+.pagination-controls button.active {
+  background-color: var(--blue) !important;
+  color: var(--bgc) !important;
+  border-color: var(--blue) !important;
+}
+
+@media (max-width: 900px) {
+  .search-controls {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 640px) {
+  .search-controls,
+  .device-actions,
+  .pagination-controls {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .pagination-tools {
-    justify-content: space-between;
+  .pagination-summary {
+    flex-direction: column;
   }
 
-  .pagination-copy {
-    white-space: normal;
+  .summary-separator {
+    display: none;
   }
 }

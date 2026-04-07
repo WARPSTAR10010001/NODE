@@ -25,6 +25,10 @@
   gap: 8px;
 }
 
+.type-field select {
+  min-width: 360px;
+}
+
 .manage-list {
   display: flex;
   flex-direction: column;
@@ -53,6 +57,16 @@
   gap: 12px;
 }
 
+.edit-field {
+  display: flex;
+  flex-direction: column;
+  grid-column: 1 / -1;
+}
+
+.edit-field-full {
+  grid-column: 1 / -1;
+}
+
 .edit-grid textarea,
 .edit-grid input {
   width: 100%;
@@ -60,6 +74,16 @@
 }
 
 .edit-grid textarea {
-  grid-column: 1 / -1;
   min-height: 120px;
+}
+
+@media (max-width: 640px) {
+  .manage-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .type-field select {
+    min-width: 100%;
+  }
 }

@@ -39,6 +39,7 @@
 .selection input {
   width: 100%;
   box-sizing: border-box;
+  min-height: 20px;
 }
 
 .selection .options {
@@ -55,14 +56,14 @@
   font-size: 1em;
 }
 
-p {
-  margin: -10px 0 15px;
+.selection h2 {
+  margin: 0;
+  font-size: 1.65em;
+  line-height: 1.1;
 }
 
-.overlay-actions {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
+p {
+  margin: -10px 0 15px;
 }
 
 .filter-grid {
@@ -86,11 +87,81 @@ p {
 }
 
 .section-label {
-  font-size: 1em;
+  margin: 0;
+  font-size: 2em;
+  line-height: 1;
+  color: var(--blue);
 }
 
 .overlay-divider {
   margin: 20px 0;
+}
+
+#style-overlay .options {
+  gap: 0;
+}
+
+#style-overlay .option-card {
+  min-width: 130px;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  cursor: pointer;
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+#style-overlay .option-card:hover {
+  color: var(--tc);
+}
+
+#style-overlay .option-card:has(input[type="radio"]:checked) {
+  background: transparent;
+  color: var(--tc);
+}
+
+#style-overlay .option-card:has(input[type="radio"]:checked):hover {
+  color: var(--tc);
+}
+
+#style-overlay .option-card span {
+  font-size: 1.25em;
+}
+
+#style-overlay .option-card input[type="radio"] {
+  width: 52px;
+  height: 30px;
+  border-radius: 999px;
+  border: 3px solid var(--tc);
+  background-color: var(--bgc);
+  padding: 0;
+  margin: 0;
+  position: relative;
+}
+
+#style-overlay .option-card input[type="radio"]::before {
+  content: "";
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background-color: var(--tc);
+  transform: translateX(-10px);
+}
+
+#style-overlay .option-card input[type="radio"]:hover {
+  border-color: var(--tc);
+  transform: none;
+}
+
+#style-overlay .option-card input[type="radio"]:checked {
+  border-color: var(--tc);
+  background-color: var(--blue);
+}
+
+#style-overlay .option-card input[type="radio"]:checked::before {
+  background-color: var(--tc);
+  transform: translateX(10px);
 }
 
 .overlay-actions {
@@ -104,11 +175,7 @@ p {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
-}
-
-.selection input,
-.selection select {
-  min-height: 20px;
+  justify-content: flex-end;
 }
 
 @media (max-width: 900px) {

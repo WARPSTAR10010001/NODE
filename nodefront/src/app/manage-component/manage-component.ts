@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { combineLatest } from 'rxjs';
 
 import { Category, CategoryService } from '../category-service';
 import { Status, StatusService } from '../status-service';
@@ -43,9 +44,19 @@ export class ManageComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.route.paramMap.subscribe((params) => {
-      const param = params.get('type');
-      this.type = this.isManageType(param) ? param : 'category';
+    combineLatest([this.route.paramMap, this.route.queryParamMap]).subscribe(([params, queryParams]) => {
+      const queryType = queryParams.get('type');
+      const legacyParamType = params.get('type');
+
+      if (this.isManageType(legacyParamType)) {
+        this.router.navigate(['/manage'], {
+          queryParams: legacyParamType === 'category' ? {} : { type: legacyParamType },
+          replaceUrl: true
+        });
+        return;
+      }
+
+      this.type = this.isManageType(queryType) ? queryType : 'category';
       this.load();
     });
   }
@@ -54,8 +65,23 @@ export class ManageComponent implements OnInit {
     return this.options.find((option) => option.id === this.type)?.label ?? 'Verwaltung';
   }
 
+  get createLabel(): string {
+    switch (this.type) {
+      case 'category':
+        return 'Kategorie erstellen';
+      case 'status':
+        return 'Status erstellen';
+      case 'location':
+        return 'Standort erstellen';
+      case 'network-environment':
+        return 'Netzwerkumgebung erstellen';
+    }
+  }
+
   onTypeChange(type: ManageType): void {
-    this.router.navigate(['/manage', type]);
+    this.router.navigate(['/manage'], {
+      queryParams: type === 'category' ? {} : { type }
+    });
   }
 
   isLocation(item: ManageItem): item is Location {
@@ -72,7 +98,6 @@ export class ManageComponent implements OnInit {
         houseNumber: location.houseNumber ?? '',
         room: location.room ?? ''
       };
-      this.overlay.showOverlay('info', 'Bearbeitung gestartet.');
       return;
     }
 
@@ -81,8 +106,6 @@ export class ManageComponent implements OnInit {
       name: base.name ?? '',
       description: 'description' in base ? (base.description ?? '') : ''
     };
-
-    this.overlay.showOverlay('info', 'Bearbeitung gestartet.');
   }
 
   cancelEdit(): void {

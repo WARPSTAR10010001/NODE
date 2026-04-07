@@ -41,10 +41,10 @@ export class OverlayComponent implements OnInit {
     this.overlay.hideOverlay();
   }
 
-  navigate(route?: string) {
+  navigate(route?: string, queryParams?: Record<string, string>) {
     this.close();
     if (route) {
-      this.router.navigate([route]);
+      this.router.navigate([route], { queryParams });
     }
   }
 

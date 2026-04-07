@@ -6,9 +6,7 @@
         <div id="header-buttons">
             @if (auth.isLoggedIn()) {
                 @if (auth.loggedRole() === 1) {
-                <button (click)="navigateCreate()">+</button>
                 } @else if (auth.loggedRole() === 2) {
-                <button (click)="navigateCreate()">+</button>
                 <button id="admin" (click)="navigateAdmin()">Adminportal</button>
                 }
                 @if (auth.activated() === true) {

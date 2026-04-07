@@ -2,8 +2,18 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { Subject, forkJoin, of, switchMap, takeUntil } from 'rxjs';
+import {
+  Subject,
+  debounceTime,
+  distinctUntilChanged,
+  forkJoin,
+  of,
+  switchMap,
+  takeUntil,
+  tap
+} from 'rxjs';
 
+import { AuthService } from '../auth-service';
 import { Category, CategoryService } from '../category-service';
 import { Device, DeviceListResponse, DeviceService } from '../device-service';
 import { Location, LocationService } from '../location-service';
@@ -15,12 +25,11 @@ import {
   OverlayService
 } from '../overlay-service';
 import { Status, StatusService } from '../status-service';
+import { LdapUser, UserService } from '../user-service';
 
 type SortDirection = 'asc' | 'desc';
 
 type SortField =
-  | 'inventoryNumber'
-  | 'name'
   | 'assignedToUsername'
   | 'categoryName'
   | 'statusName'
@@ -30,8 +39,7 @@ type SortField =
   | 'lastEditAt';
 
 type FilterState = {
-  inventoryNumber: string;
-  name: string;
+  assignedToDisplay: string;
   assignedToUsername: string;
   categoryId: string;
   statusId: string;
@@ -44,9 +52,9 @@ type FilterState = {
 };
 
 const DEVICE_PAGE_FETCH_SIZE = 200;
-const DEFAULT_PAGE_SIZE = 10;
-const DEFAULT_SORT_FIELD: SortField = 'inventoryNumber';
-const DEFAULT_SORT_DIRECTION: SortDirection = 'asc';
+const DEFAULT_PAGE_SIZE = 20;
+const DEFAULT_SORT_FIELD: SortField = 'lastEditAt';
+const DEFAULT_SORT_DIRECTION: SortDirection = 'desc';
 
 @Component({
   selector: 'app-devices-component',
@@ -55,8 +63,6 @@ const DEFAULT_SORT_DIRECTION: SortDirection = 'asc';
   styleUrls: ['./devices-component.css']
 })
 export class DevicesComponent implements OnInit, OnDestroy {
-  protected readonly pageSizeOptions = [10, 25, 50];
-
   devices: Device[] = [];
   allDevices: Device[] = [];
   filteredDevices: Device[] = [];
@@ -69,8 +75,11 @@ export class DevicesComponent implements OnInit, OnDestroy {
   pageSize = DEFAULT_PAGE_SIZE;
   loading = false;
   searchTerm = '';
+  ldapResults: LdapUser[] = [];
+  ldapLoading = false;
 
   private readonly destroy$ = new Subject<void>();
+  private readonly assignedSearch$ = new Subject<string>();
   private readonly dateFormatter = new Intl.DateTimeFormat('de-DE', {
     dateStyle: 'medium',
     timeStyle: 'short'
@@ -89,10 +98,13 @@ export class DevicesComponent implements OnInit, OnDestroy {
     private statusService: StatusService,
     private locationService: LocationService,
     private networkEnvironmentService: NetworkEnvironmentService,
-    private overlayService: OverlayService
+    private overlayService: OverlayService,
+    private userService: UserService,
+    private authService: AuthService
   ) {}
 
   ngOnInit(): void {
+    this.setupLdapSearch();
     this.loadData();
   }
 
@@ -112,6 +124,7 @@ export class DevicesComponent implements OnInit, OnDestroy {
   resetAllFilters(): void {
     this.filters = this.createEmptyFilters();
     this.draftFilters = this.createEmptyFilters();
+    this.ldapResults = [];
     this.sortField = DEFAULT_SORT_FIELD;
     this.draftSortField = DEFAULT_SORT_FIELD;
     this.sortDirection = DEFAULT_SORT_DIRECTION;
@@ -123,12 +136,6 @@ export class DevicesComponent implements OnInit, OnDestroy {
   onPageChange(page: number): void {
     if (page < 1 || page > this.totalPages) return;
     this.page = page;
-    this.sliceCurrentPage();
-  }
-
-  onPageSizeChange(size: number): void {
-    this.pageSize = size;
-    this.page = 1;
     this.sliceCurrentPage();
   }
 
@@ -157,7 +164,9 @@ export class DevicesComponent implements OnInit, OnDestroy {
   }
 
   get activeFilterCount(): number {
-    return Object.values(this.filters).filter((value) => value.trim().length > 0).length;
+    return Object.entries(this.filters)
+      .filter(([key, value]) => key !== 'assignedToDisplay' && value.trim().length > 0)
+      .length;
   }
 
   get totalPages(): number {
@@ -165,10 +174,7 @@ export class DevicesComponent implements OnInit, OnDestroy {
   }
 
   get visiblePages(): number[] {
-    const start = Math.max(1, this.page - 2);
-    const end = Math.min(this.totalPages, start + 4);
-    const adjustedStart = Math.max(1, end - 4);
-    return Array.from({ length: end - adjustedStart + 1 }, (_, index) => adjustedStart + index);
+    return Array.from({ length: this.totalPages }, (_, index) => index + 1);
   }
 
   get startItem(): number {
@@ -177,6 +183,10 @@ export class DevicesComponent implements OnInit, OnDestroy {
 
   get endItem(): number {
     return Math.min(this.page * this.pageSize, this.total);
+  }
+
+  get canEditDevices(): boolean {
+    return (this.authService.loggedRole() ?? 0) >= 1;
   }
 
   private loadData(): void {
@@ -233,6 +243,11 @@ export class DevicesComponent implements OnInit, OnDestroy {
       sortOptions: this.getSortOptions(),
       fields: this.getFilterFields(),
       onFieldChange: (key, value) => {
+        if (key === 'assignedToDisplay') {
+          this.onAssignedFilterChange(value);
+          return;
+        }
+
         this.draftFilters = {
           ...this.draftFilters,
           [key]: value
@@ -249,6 +264,7 @@ export class DevicesComponent implements OnInit, OnDestroy {
       },
       onReset: () => {
         this.draftFilters = this.createEmptyFilters();
+        this.ldapResults = [];
         this.draftSortField = DEFAULT_SORT_FIELD;
         this.draftSortDirection = DEFAULT_SORT_DIRECTION;
         this.refreshFilterOverlay();
@@ -274,25 +290,15 @@ export class DevicesComponent implements OnInit, OnDestroy {
   private getFilterFields(): OverlayFilterField[] {
     return [
       {
-        key: 'inventoryNumber',
-        label: 'Node-Bezeichnung',
-        type: 'text',
-        value: this.draftFilters.inventoryNumber,
-        placeholder: 'z. B. NODE-12345678'
-      },
-      {
-        key: 'name',
-        label: 'Name',
-        type: 'text',
-        value: this.draftFilters.name,
-        placeholder: 'Gerätename'
-      },
-      {
-        key: 'assignedToUsername',
+        key: 'assignedToDisplay',
         label: 'Zugewiesen an',
-        type: 'select',
-        value: this.draftFilters.assignedToUsername,
-        options: this.buildAssignedUserOptions()
+        type: 'autocomplete',
+        value: this.draftFilters.assignedToDisplay,
+        placeholder: 'LDAP-Nutzer suchen',
+        options: this.ldapResults.map((result) => ({
+          value: result.username,
+          label: `${result.displayName} (${result.username})`
+        }))
       },
       {
         key: 'categoryId',
@@ -375,8 +381,6 @@ export class DevicesComponent implements OnInit, OnDestroy {
 
   private getSortOptions(): OverlaySelectOption[] {
     return [
-      { value: 'inventoryNumber', label: 'Node-Bezeichnung' },
-      { value: 'name', label: 'Name' },
       { value: 'assignedToUsername', label: 'Zugewiesen an' },
       { value: 'categoryName', label: 'Kategorie' },
       { value: 'statusName', label: 'Status' },
@@ -387,27 +391,13 @@ export class DevicesComponent implements OnInit, OnDestroy {
     ];
   }
 
-  private buildAssignedUserOptions(): OverlaySelectOption[] {
-    const labels = Array.from(new Set(
-      this.allDevices
-        .map((device) => device.assignedToUsername || '')
-        .filter((value) => value.trim().length > 0)
-    )).sort((a, b) => a.localeCompare(b, 'de-DE', { sensitivity: 'base' }));
-
-    return [
-      { value: '', label: 'Alle Nutzer' },
-      ...labels.map((label) => ({ value: label, label }))
-    ];
-  }
-
   private formatLocation(location: Location): string {
     return [location.city, location.address, location.houseNumber].filter(Boolean).join(', ');
   }
 
   private createEmptyFilters(): FilterState {
     return {
-      inventoryNumber: '',
-      name: '',
+      assignedToDisplay: '',
       assignedToUsername: '',
       categoryId: '',
       statusId: '',
@@ -442,14 +432,6 @@ export class DevicesComponent implements OnInit, OnDestroy {
 
   private matchesFilters(device: Device): boolean {
     if (this.searchTerm.trim().length > 0 && !this.matchesSearch(device)) {
-      return false;
-    }
-
-    if (this.filters.inventoryNumber && !this.matchesText(device.inventoryNumber, this.filters.inventoryNumber)) {
-      return false;
-    }
-
-    if (this.filters.name && !this.matchesText(device.name, this.filters.name)) {
       return false;
     }
 
@@ -488,10 +470,6 @@ export class DevicesComponent implements OnInit, OnDestroy {
     const search = this.searchTerm.trim().toLowerCase();
     return String(device.inventoryNumber || '').toLowerCase().includes(search)
       || String(device.name || '').toLowerCase().includes(search);
-  }
-
-  private matchesText(value: string | undefined, filter: string): boolean {
-    return String(value || '').toLowerCase().includes(filter.toLowerCase());
   }
 
   private matchesDateRange(value: string | undefined, from: string, to: string): boolean {
@@ -547,5 +525,71 @@ export class DevicesComponent implements OnInit, OnDestroy {
       default:
         return String(device[field] || '');
     }
+  }
+
+  private onAssignedFilterChange(value: string): void {
+    this.draftFilters = {
+      ...this.draftFilters,
+      assignedToDisplay: value
+    };
+
+    const selected = this.ldapResults.find(
+      (result) => `${result.displayName} (${result.username})` === value
+    );
+
+    if (selected) {
+      this.draftFilters = {
+        ...this.draftFilters,
+        assignedToDisplay: `${selected.displayName} (${selected.username})`,
+        assignedToUsername: selected.username
+      };
+      this.ldapResults = [];
+      this.refreshFilterOverlay();
+      return;
+    }
+
+    this.draftFilters = {
+      ...this.draftFilters,
+      assignedToUsername: ''
+    };
+
+    this.assignedSearch$.next(value);
+    this.refreshFilterOverlay();
+  }
+
+  private setupLdapSearch(): void {
+    this.assignedSearch$
+      .pipe(
+        debounceTime(200),
+        distinctUntilChanged(),
+        tap((query) => {
+          this.ldapLoading = query.trim().length >= 2;
+          if (query.trim().length < 2) {
+            this.ldapResults = [];
+            this.refreshFilterOverlay();
+          }
+        }),
+        switchMap((query) => {
+          if (query.trim().length < 2) {
+            return of([] as LdapUser[]);
+          }
+
+          return this.userService.searchLdap(query);
+        }),
+        takeUntil(this.destroy$)
+      )
+      .subscribe({
+        next: (results) => {
+          this.ldapResults = results;
+          this.ldapLoading = false;
+          this.refreshFilterOverlay();
+        },
+        error: (error) => {
+          console.error('LDAP search failed', error);
+          this.ldapLoading = false;
+          this.ldapResults = [];
+          this.refreshFilterOverlay();
+        }
+      });
   }
 }

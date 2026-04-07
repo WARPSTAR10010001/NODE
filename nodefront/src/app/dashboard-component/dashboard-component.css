@@ -1,32 +1,121 @@
-#dashboard {
+.dashboard-shell {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
+    gap: 10px;
     width: 100%;
-    justify-content: space-between;
+}
+
+.dashboard-section {
+    display: flex;
+    flex-direction: column;
     gap: 10px;
 }
 
-.entry {
-    width: 500px;
-    height: 200px;
-    border: 3px solid var(--blue);
-    background-color: var(--blue);
-    color: var(--bgc);
-    border-radius: 5px;
+.dashboard-section h1,
+.fact-card h1 {
     margin: 0;
-    padding: 0 15px;
-    cursor: pointer;
 }
 
-.entry hr {
+.quicklink-row,
+.facts-row {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.quicklink-card {
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 15px;
+    text-align: left;
+    justify-content: center;
+}
+
+.quicklink-card h1 {
+    margin: 0;
+    font-size: 1em;
+    color: var(--bgc);
+}
+
+.quicklink-card hr {
+    width: 100%;
+    margin: 0;
     border-color: var(--bgc);
 }
 
-.entry:hover {
-    color: var(--blue);
-    background-color: var(--bgc);
+.quicklink-card p {
+    font-size: 0.6em;
+    color: var(--bgc);
 }
 
-.entry:hover hr {
+.quicklink-card:hover h1,
+.quicklink-card:hover p {
+    color: var(--blue);
+}
+
+.quicklink-card:hover hr {
     border-color: var(--blue);
+}
+
+.fact-card,
+.facts-state {
+    border: 3px solid var(--tc);
+    border-radius: 5px;
+    padding: 10px;
+    box-sizing: border-box;
+}
+
+.fact-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background-color: var(--bgc);
+    color: var(--tc);
+    text-align: left;
+    cursor: default;
+    padding: 20px;
+}
+
+.fact-card:hover {
+    background-color: var(--bgc);
+    color: var(--tc);
+}
+
+.fact-card h1 {
+    color: var(--blue);
+    font-size: 0.em;
+    font-size: 0.75em;
+}
+
+.fact-card hr {
+    width: 100%;
+    margin: 0;
+    border-color: var(--tc);
+}
+
+.fact-card p,
+.facts-state p {
+    font-size: 0.6em;
+    color: var(--tc);
+}
+
+.facts-state.error {
+    border-color: var(--red);
+    color: var(--red);
+}
+
+@media (max-width: 900px) {
+    .quicklink-row,
+    .facts-row {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 640px) {
+    .quicklink-row,
+    .facts-row {
+        grid-template-columns: 1fr;
+    }
 }

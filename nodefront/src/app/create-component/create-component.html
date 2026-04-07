@@ -1,9 +1,8 @@
 <div class="create-page">
   <div class="title">
     <hr>
-    <h1>Creator</h1>
+    <h1>Erstellung</h1>
   </div>
-
   <div class="topbar">
     <div class="type-field">
       <label for="entityType">Typ</label>
@@ -14,7 +13,6 @@
       </select>
     </div>
   </div>
-
   <form [formGroup]="form" (ngSubmit)="onSubmit()" class="create-form">
     @if (entityType === 'device') {
     <section class="form-section">
@@ -81,7 +79,6 @@
         </div>
       </div>
     </section>
-
     <section class="form-section">
       <h1>Beschaffung</h1>
       <div class="field-grid">
@@ -117,11 +114,8 @@
           </select>
         </div>
       </div>
-
       <hr class="section-divider">
-
       <h1>Für Drucker</h1>
-
       <div class="field-grid printer-grid">
         <div class="form-field">
           <label for="contractType">Vertragsart</label>
@@ -138,7 +132,6 @@
         </div>
       </div>
     </section>
-
     <section class="form-section">
       <h1>Netzwerk</h1>
       <div class="field-grid">
@@ -179,7 +172,6 @@
         </div>
       </div>
     </section>
-
     <section class="form-section">
       <h1>Notizen</h1>
       <div class="field-grid single-column">
@@ -189,7 +181,6 @@
       </div>
     </section>
     }
-
     @if (entityType === 'category' || entityType === 'status') {
     <section class="form-section">
       <h1>{{ entityType === 'category' ? 'Kategorie' : 'Status' }}</h1>
@@ -205,7 +196,6 @@
       </div>
     </section>
     }
-
     @if (entityType === 'location') {
     <section class="form-section">
       <h1>Standort</h1>
@@ -229,7 +219,6 @@
       </div>
     </section>
     }
-
     @if (entityType === 'network-environment') {
     <section class="form-section">
       <h1>Netzwerkumgebung</h1>
@@ -241,11 +230,10 @@
       </div>
     </section>
     }
-
     <div class="form-actions">
       <button type="button" (click)="clearForm()" class="danger">Formular leeren</button>
       <button type="submit" class="confirm" [disabled]="form.invalid || submitting">
-        @if (submitting) { Speichere... } @else { Erstellen }
+        Erstellen
       </button>
     </div>
   </form>

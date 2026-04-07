@@ -82,6 +82,12 @@ export const routes: Routes = [
         title: 'Verwalten • NODE'
       },
       {
+        path: 'manage',
+        canActivate: [minRoleGuard(1)],
+        component: ManageComponent,
+        title: 'Verwalten • NODE'
+      },
+      {
         path: '',
         pathMatch: 'full',
         redirectTo: 'dashboard'

@@ -13,7 +13,7 @@
         }
       </select>
     </div>
-    <button class="confirm" routerLink="/create">Neu</button>
+    <button class="confirm" [routerLink]="['/create']" [queryParams]="{ type: type }">{{ createLabel }}</button>
   </div>
 
   <div class="manage-list">
@@ -34,9 +34,16 @@
           </div>
           } @else {
           <div class="edit-grid">
-            <input [(ngModel)]="draft['name']" placeholder="Name">
+            <div class="edit-field">
+              <label [for]="'edit-name-' + item.id">Name</label>
+              <input [id]="'edit-name-' + item.id" [(ngModel)]="draft['name']" placeholder="Name">
+            </div>
             @if (type !== 'network-environment') {
-            <textarea [(ngModel)]="draft['description']" rows="4" placeholder="Beschreibung"></textarea>
+            <div class="edit-field edit-field-full">
+              <label [for]="'edit-description-' + item.id">Beschreibung</label>
+              <textarea [id]="'edit-description-' + item.id" [(ngModel)]="draft['description']" rows="4"
+                placeholder="Beschreibung"></textarea>
+            </div>
             }
           </div>
           }

@@ -1,27 +1,47 @@
-<div class="cc">
+<div class="dashboard-shell">
     <div class="title">
         <hr>
-        <h1>Dashboard</h1>
+        <h1>Willkommen in NODE!</h1>
     </div>
-    <div id="dashboard">
-        <div class="entry" [routerLink]="['/devices']">
-            <h1>Geräteübersicht</h1>
-            <hr>
-            <p>Alle Geräte von der NODE-Datenbank abrufen.</p>
+    <section class="dashboard-section">
+        <h1>Schnellstart</h1>
+
+        <div class="quicklink-row">
+            @for (link of quickLinks; track link.route) {
+            <a
+                class="card quicklink-card"
+                [routerLink]="[link.route]">
+                <h1>{{ link.label }}</h1>
+                <hr>
+                <p>{{ link.subtitle }}</p>
+            </a>
+            }
         </div>
-        @if (auth.loggedRole() === 2) {
-        <div class="entry" [routerLink]="['/admin']">
-            <h1>Adminpanel</h1>
-            <hr>
-            <p>Nutzer freischalten, Rollen verteilen, etc.</p>
+    </section>
+
+    <hr>
+
+    <section class="dashboard-section">
+        <h1>Statistiken</h1>
+
+        @if (loading) {
+        <div class="facts-state">
+            <p>Dashboard-Facts werden geladen...</p>
+        </div>
+        } @else if (error) {
+        <div class="facts-state error">
+            <p>Die Facts konnten gerade nicht geladen werden.</p>
+        </div>
+        } @else {
+        <div class="facts-row">
+            @for (fact of facts; track fact.title) {
+            <article class="card fact-card">
+                <h1>{{ fact.title }}</h1>
+                <hr>
+                <p>{{ fact.detail }}</p>
+            </article>
+            }
         </div>
         }
-        @if (auth.loggedRole() === 1 || auth.loggedRole() === 2) {
-        <div class="entry" [routerLink]="['/create']">
-            <h1>Creator</h1>
-            <hr>
-            <p>Geräte, Kategorien, Status, etc. erstellen.</p>
-        </div>
-        }
-    </div>
+    </section>
 </div>

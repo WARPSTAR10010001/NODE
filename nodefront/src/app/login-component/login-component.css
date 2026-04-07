@@ -43,7 +43,6 @@
 .form-field {
   display: flex;
   flex-direction: column;
-  gap: 8px;
 }
 
 .form-field input {
@@ -54,24 +53,24 @@
 .form-actions {
   display: flex;
   justify-content: flex-start;
-  gap: 12px;
+  gap: 10px;
 }
 
 .login-aside {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 10px;
   padding: 20px 0 0;
 }
 
 .acronym-line {
   display: flex;
   align-items: baseline;
-  gap: 18px;
+  gap: 10px;
 }
 
 .acronym-letter {
-  min-width: 36px;
+  min-width: 10px;
   color: var(--blue);
   font-size: 3em;
   font-weight: 700;

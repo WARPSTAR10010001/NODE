@@ -42,6 +42,17 @@
     color: var(--blue);
 }
 
+#header-buttons button {
+    background-color: var(--bgc);
+    color: var(--tc);
+    border-color: var(--bgc);
+    padding: 5px;
+}
+
+#header-buttons button:hover {
+    color: var(--blue);
+}
+
 #footer {
     display: flex;
     flex-direction: column;

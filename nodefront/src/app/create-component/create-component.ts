@@ -8,6 +8,7 @@ import {
   UntypedFormGroup,
   Validators
 } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { Subject, debounceTime, distinctUntilChanged, switchMap, takeUntil, tap, of } from 'rxjs';
 
 import { DeviceService } from '../device-service';
@@ -62,6 +63,7 @@ export class CreateComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
   constructor(
+    private route: ActivatedRoute,
     private fb: UntypedFormBuilder,
     private deviceService: DeviceService,
     private categoryService: CategoryService,
@@ -74,7 +76,20 @@ export class CreateComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadLookups();
-    this.buildForm();
+    this.route.queryParamMap
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((params) => {
+        const type = params.get('type');
+        if (this.isEntityType(type) && type !== this.entityType) {
+          this.entityType = type;
+          this.buildForm();
+          return;
+        }
+
+        if (!this.form) {
+          this.buildForm();
+        }
+      });
     this.setupLdapSearch();
   }
 
@@ -174,31 +189,31 @@ export class CreateComponent implements OnInit, OnDestroy {
     switch (this.entityType) {
       case 'device':
         this.deviceService.create(this.buildDevicePayload()).subscribe({
-          next: ({ device }) => this.handleSuccess(`Gerät "${device.name}" wurde erstellt.`, '/devices'),
+          next: ({ device }) => this.handleSuccess(`Gerät "${device.name}" wurde erstellt.`),
           error: (error) => this.handleError('Create device failed', error, 'Gerät konnte nicht erstellt werden.')
         });
         break;
       case 'category':
         this.categoryService.create(this.buildNameDescriptionPayload()).subscribe({
-          next: ({ category }) => this.handleSuccess(`Kategorie "${category.name}" wurde erstellt.`, '/manage/category'),
+          next: ({ category }) => this.handleSuccess(`Kategorie "${category.name}" wurde erstellt.`, 'category'),
           error: (error) => this.handleError('Create category failed', error, 'Kategorie konnte nicht erstellt werden.')
         });
         break;
       case 'status':
         this.statusService.create(this.buildNameDescriptionPayload()).subscribe({
-          next: ({ status }) => this.handleSuccess(`Status "${status.name}" wurde erstellt.`, '/manage/status'),
+          next: ({ status }) => this.handleSuccess(`Status "${status.name}" wurde erstellt.`, 'status'),
           error: (error) => this.handleError('Create status failed', error, 'Status konnte nicht erstellt werden.')
         });
         break;
       case 'location':
         this.locationService.create(this.buildLocationPayload()).subscribe({
-          next: ({ location }) => this.handleSuccess(`Standort "${this.formatLocation(location)}" wurde erstellt.`, '/manage/location'),
+          next: ({ location }) => this.handleSuccess(`Standort "${this.formatLocation(location)}" wurde erstellt.`, 'location'),
           error: (error) => this.handleError('Create location failed', error, 'Standort konnte nicht erstellt werden.')
         });
         break;
       case 'network-environment':
         this.networkEnvService.create(this.buildNameOnlyPayload()).subscribe({
-          next: ({ networkEnvironment }) => this.handleSuccess(`Netzwerkumgebung "${networkEnvironment.name}" wurde erstellt.`, '/manage/network-environment'),
+          next: ({ networkEnvironment }) => this.handleSuccess(`Netzwerkumgebung "${networkEnvironment.name}" wurde erstellt.`, 'network-environment'),
           error: (error) => this.handleError('Create network environment failed', error, 'Netzwerkumgebung konnte nicht erstellt werden.')
         });
         break;
@@ -378,14 +393,26 @@ export class CreateComponent implements OnInit, OnDestroy {
     return Number.isFinite(parsed) ? parsed : null;
   }
 
-  private handleSuccess(message: string, route: string): void {
+  private isEntityType(value: string | null): value is EntityType {
+    return value === 'device'
+      || value === 'category'
+      || value === 'status'
+      || value === 'location'
+      || value === 'network-environment';
+  }
+
+  private handleSuccess(message: string, manageType?: 'category' | 'status' | 'location' | 'network-environment'): void {
     this.submitting = false;
     this.loadLookups();
     this.clearForm(false);
     this.overlay.showOverlay('success', message, null, {
       actions: [
         { label: 'Schließen', closeOnly: true },
-        { label: 'Zur Übersicht', route }
+        {
+          label: 'Zur Übersicht',
+          route: manageType ? '/manage' : '/devices',
+          queryParams: manageType && manageType !== 'category' ? { type: manageType } : {}
+        }
       ]
     });
   }

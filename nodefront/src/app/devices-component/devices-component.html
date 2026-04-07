@@ -1,49 +1,63 @@
 <div class="devices-page">
   <div class="title">
     <hr>
-    <h1>Geräteübersicht</h1>
+    <h1>Ger&auml;te&uuml;bersicht</h1>
   </div>
 
   <section class="devices-toolbar">
     <div class="search-bar">
-      <input type="text" [(ngModel)]="searchTerm" (ngModelChange)="onSearchChange()"
-        placeholder="Nach Node-Bezeichnung oder Name suchen">
-      @if (searchTerm) {
-      <button type="button" class="danger" (click)="clearSearch()">X</button>
-      }
-      <button type="button" (click)="openFilterOverlay()">Filter & Sortierung</button>
-      @if (activeFilterCount > 0) {
-      <button type="button" class="danger" (click)="resetAllFilters()">Zurücksetzen</button>
-      }
+      <label for="device-search" class="search-label">Suche</label>
+      <div class="search-controls">
+        <input
+          type="text"
+          [(ngModel)]="searchTerm"
+          (ngModelChange)="onSearchChange()"
+          id="device-search"
+          placeholder="Nach Node-Bezeichnung oder Name suchen">
+        @if (searchTerm) {
+        <button type="button" class="danger" (click)="clearSearch()">X</button>
+        }
+        <button type="button" (click)="openFilterOverlay()">Sortieren & Filtern</button>
+        @if (activeFilterCount > 0) {
+        <button type="button" class="danger" (click)="resetAllFilters()">Zur&uuml;cksetzen</button>
+        }
+      </div>
     </div>
   </section>
 
+  <hr>
+
   @if (loading) {
   <section class="state-card">
-    <h2>Lade Geräte...</h2>
-    <p>Die Übersicht wird vorbereitet.</p>
+    <h2>Lade Ger&auml;te...</h2>
+    <p>Die &Uuml;bersicht wird vorbereitet.</p>
   </section>
   } @else if (devices.length === 0) {
   <section class="state-card">
-    <h2>Keine passenden Geräte gefunden</h2>
-    <p>Pass die Filter an oder setze sie zurück.</p>
+    <h2>Keine passenden Ger&auml;te gefunden</h2>
+    <p>Pass die Suche oder Filter an, um wieder Treffer zu sehen.</p>
   </section>
   } @else {
-  <section class="device-table-card">
+  <section class="device-list-card">
     <div class="table-wrap">
       <table class="device-table">
         <thead>
           <tr>
             <th>Node-Bezeichnung</th>
             <th>Name</th>
-            <th>Zugewiesen an</th>
+            <th>Zuweisung</th>
             <th>Erstellt am</th>
-            <th>Geändert am</th>
+            <th>Ge&auml;ndert am</th>
             <th>Aktionen</th>
           </tr>
         </thead>
+        <tbody class="table-header-divider">
+          <tr>
+            <td colspan="6"><hr></td>
+          </tr>
+        </tbody>
         <tbody>
-          @for (device of devices; track device.id) {
+          @for (device of devices; track device.id; let last = $last) {
           <tr>
             <td>{{ device.inventoryNumber }}</td>
             <td>{{ device.name }}</td>
@@ -51,12 +65,19 @@
             <td>{{ formatDate(device.createdAt) }}</td>
             <td>{{ formatDate(device.lastEditAt) }}</td>
             <td>
-              <div class="table-actions">
+              <div class="device-actions">
                 <button type="button" [routerLink]="['/devices', routeSegment(device)]">Ansehen</button>
+                @if (canEditDevices) {
                 <button type="button" [routerLink]="['/devices', routeSegment(device), 'edit']">Bearbeiten</button>
+                }
               </div>
             </td>
           </tr>
+          @if (!last) {
+          <tr class="device-row-divider">
+            <td colspan="6"><hr></td>
+          </tr>
+          }
           }
         </tbody>
       </table>
@@ -65,36 +86,34 @@
   }
 
   @if (!loading && total > 0) {
-  <section class="pagination-bar">
-    <div class="pagination-copy">
-      <span>{{ total }} Geräte</span>
-      <span>Zeige {{ startItem }} bis {{ endItem }}</span>
+  <hr>
+  <section class="pagination-section">
+    <div class="pagination-summary">
+      <span>{{ total }} Ger&auml;te insgesamt</span>
+      <span class="summary-separator">|</span>
+      <span>Anzeige {{ startItem }} bis {{ endItem }}</span>
+      <span class="summary-separator">|</span>
       <span>Seite {{ page }} von {{ totalPages }}</span>
       @if (activeFilterCount > 0) {
+      <span class="summary-separator">|</span>
       <span>{{ activeFilterCount }} aktive Filter</span>
       }
+      <span class="summary-separator">|</span>
+      <span>20 Ger&auml;te pro Seite</span>
     </div>
-    <div class="pagination-tools">
-      <div class="page-size-group">
-        @for (size of pageSizeOptions; track size) {
-        <button type="button" [class.active]="size === pageSize" (click)="onPageSizeChange(size)">
-          {{ size }}
-        </button>
-        }
-      </div>
-      <div class="pagination-controls">
-        @if (page > 1) {
-        <button type="button" (click)="onPageChange(page - 1)">Zurück</button>
-        }
-        @for (pageNumber of visiblePages; track pageNumber) {
-        <button type="button" [class.active]="pageNumber === page" (click)="onPageChange(pageNumber)">
-          {{ pageNumber }}
-        </button>
-        }
-        @if (page < totalPages) {
-        <button type="button" (click)="onPageChange(page + 1)">Weiter</button>
-        }
-      </div>
+
+    <div class="pagination-controls">
+      @if (page > 1) {
+      <button type="button" (click)="onPageChange(page - 1)">Zur&uuml;ck</button>
+      }
+      @for (pageNumber of visiblePages; track pageNumber) {
+      <button type="button" [class.active]="pageNumber === page" (click)="onPageChange(pageNumber)">
+        {{ pageNumber }}
+      </button>
+      }
+      @if (page < totalPages) {
+      <button type="button" (click)="onPageChange(page + 1)">Weiter</button>
+      }
     </div>
   </section>
   }

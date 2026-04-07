@@ -11,6 +11,7 @@ export type OverlayType =
 export interface OverlayAction {
   label: string;
   route?: string;
+  queryParams?: Record<string, string>;
   closeOnly?: boolean;
 }
 
@@ -22,7 +23,7 @@ export interface OverlaySelectOption {
 export interface OverlayFilterField {
   key: string;
   label: string;
-  type: 'text' | 'number' | 'date' | 'select';
+  type: 'text' | 'number' | 'date' | 'select' | 'autocomplete';
   value: string;
   placeholder?: string;
   options?: OverlaySelectOption[];
