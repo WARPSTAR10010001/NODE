@@ -1,20 +1,115 @@
-<div class="cc">
-    <div class="title">
-        <hr>
-        <h1>Hauptüberschrift</h1>
+<div class="admin-page">
+  <div class="title">
+    <hr>
+    <h1>Nutzerfreigabe</h1>
+  </div>
+
+  <section class="search-bar">
+    <div class="search-controls">
+      <div class="search-field">
+        <label for="user-search" class="search-label">Suche</label>
+        <div class="search-input-row">
+          <input
+            type="text"
+            [(ngModel)]="searchTerm"
+            (ngModelChange)="onSearchChange()"
+            id="user-search"
+            placeholder="Nach Name oder Personalnummer suchen">
+          @if (searchTerm) {
+          <button type="button" class="danger" (click)="clearSearch()">X</button>
+          }
+        </div>
+      </div>
+      <div class="toolbar-selects">
+        <div class="filter-field">
+          <label for="activationFilter">Freigeschaltet</label>
+          <select class="toolbar-activation-select" id="activationFilter" [ngModel]="activationFilter"
+            (ngModelChange)="onActivationFilterChange($event)">
+            <option value="pending">Nicht freigeschaltet</option>
+            <option value="active">Freigeschaltet</option>
+          </select>
+        </div>
+
+        @if (activationFilter === 'active') {
+        <div class="filter-field role-filter-field">
+          <label for="roleFilter">Rolle</label>
+          <select class="toolbar-role-select" id="roleFilter" [ngModel]="roleFilter"
+            (ngModelChange)="onRoleFilterChange($event)">
+            <option value="">Alle Rollen</option>
+            <option value="0">Viewer</option>
+            <option value="1">Editor</option>
+            <option value="2">Admin</option>
+          </select>
+        </div>
+        }
+      </div>
     </div>
-    <h1>Überschrift</h1>
-    <p>TextTextTextTextTextTextTextTextTextTextTextTextTextTextTextTextTextTextTextTextTextTextTextTextTextTextTextTextTextTextTextTextTextTextTextTextTextTextTextTextTextTextTextTextTextTextTextTextTextTextTextTextTextTextTextTextTextTextTextTextTextTextTextText</p>
-    <label>Eingabefeld<br><input></label>
-    <button>Knopf</button><button class="danger">Gefahr</button><br><button class="confirm">Bestätigen</button>
-    <hr>
-    <h1>Überschrift</h1>
-    <div class="card">Navigationskarte</div>
-    <hr>
-    <h1>Selektor</h1>
-    <select>
-        <option>Option 1</option>
-        <option>Option 2</option>
-        <option>Option 3</option>
-    </select>
+  </section>
+
+  @if (loading) {
+  <section class="state-card">
+    <h2>Lade Nutzer...</h2>
+    <p>Die Freigabeliste wird vorbereitet.</p>
+  </section>
+  } @else if (!hasUsers) {
+  <section class="state-card">
+    <h2>Keine passenden Nutzer</h2>
+    <p>Für den gewählten Filter sind aktuell keine Einträge vorhanden.</p>
+  </section>
+  } @else {
+  <section class="user-list-card">
+    <div class="table-wrap">
+      <table class="user-table">
+        <thead>
+          <tr>
+            <th>Nutzer</th>
+            <th>Status</th>
+            <th>Letzter Login</th>
+            <th>Freigeschaltet</th>
+            <th>Rolle</th>
+            <th>Speichern</th>
+          </tr>
+        </thead>
+        <tbody class="table-header-divider">
+          <tr>
+            <td colspan="6"><hr></td>
+          </tr>
+        </tbody>
+        <tbody>
+          @for (user of filteredUsers; track trackByUserId($index, user); let last = $last) {
+          <tr>
+            <td>{{ userLabel(user) }}</td>
+            <td>{{ statusLabel(user) }}</td>
+            <td>{{ formatLastLogin(user.lastLogin) }}</td>
+            <td>
+              <select class="activation-select" [(ngModel)]="user.activationDraft">
+                <option value="false">Nicht freigeschaltet</option>
+                <option value="true">Freigeschaltet</option>
+              </select>
+            </td>
+            <td>
+              <select class="role-select" [(ngModel)]="user.roleDraft">
+                <option value="0">Viewer</option>
+                <option value="1">Editor</option>
+                <option value="2">Admin</option>
+              </select>
+            </td>
+            <td>
+              <button type="button" [class.confirm]="hasPendingChanges(user)"
+                [disabled]="user.saving || !hasPendingChanges(user)" (click)="saveUser(user)">
+                {{ user.saving ? 'Speichere...' : 'Speichern' }}
+              </button>
+            </td>
+          </tr>
+          @if (!last) {
+          <tr class="user-row-divider">
+            <td colspan="6"><hr></td>
+          </tr>
+          }
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+  }
 </div>

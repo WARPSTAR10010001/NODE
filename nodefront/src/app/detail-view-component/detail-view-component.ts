@@ -1,11 +1,12 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { Subject, switchMap, takeUntil, throwError } from 'rxjs';
+import { Subject, forkJoin, map, of, switchMap, takeUntil, throwError } from 'rxjs';
 
 import { AuthService } from '../auth-service';
 import { Device, DeviceService } from '../device-service';
 import { OverlayService } from '../overlay-service';
+import { LdapUser, UserRecord, UserService } from '../user-service';
 
 @Component({
   selector: 'app-detail-view-component',
@@ -18,6 +19,7 @@ export class DetailViewComponent implements OnInit, OnDestroy {
   loading = true;
   deleting = false;
   errorMessage = '';
+  private readonly displayNameMap = new Map<string, string>();
 
   private readonly destroy$ = new Subject<void>();
   private readonly dateFormatter = new Intl.DateTimeFormat('de-DE', {
@@ -34,7 +36,8 @@ export class DetailViewComponent implements OnInit, OnDestroy {
     private router: Router,
     private deviceService: DeviceService,
     private overlay: OverlayService,
-    private authService: AuthService
+    private authService: AuthService,
+    private userService: UserService
   ) {}
 
   ngOnInit(): void {
@@ -66,11 +69,15 @@ export class DetailViewComponent implements OnInit, OnDestroy {
             return throwError(() => new Error('Gerät konnte nicht gefunden werden.'));
           }
 
-          return this.deviceService.get(matchedDevice.id);
-        })
+          return forkJoin({
+            deviceResponse: this.deviceService.get(matchedDevice.id),
+            users: this.userService.getUsers()
+          });
+        }),
+        switchMap(({ deviceResponse, users }) => this.enrichDeviceUsers(this.hydrateDeviceUsers(deviceResponse.device, users)))
       )
       .subscribe({
-        next: ({ device }) => {
+        next: (device) => {
           this.device = device;
           this.loading = false;
         },
@@ -109,7 +116,15 @@ export class DetailViewComponent implements OnInit, OnDestroy {
   }
 
   formatAssignedUser(): string {
-    return this.device?.assignedToUsername || 'Nicht zugewiesen';
+    return this.formatUserLabel(this.device?.assignedToUsername) || 'Nicht zugewiesen';
+  }
+
+  formatCreatedBy(): string {
+    return this.formatUserLabel(this.device?.createdByUsername);
+  }
+
+  formatLastEditedBy(): string {
+    return this.formatUserLabel(this.device?.lastEditByUsername);
   }
 
   formatLocation(): string {
@@ -219,5 +234,66 @@ export class DetailViewComponent implements OnInit, OnDestroy {
 
   goBack(): void {
     this.router.navigate(['/devices']);
+  }
+
+  private hydrateDeviceUsers(device: Device, users: UserRecord[]): Device {
+    const usernameById = new Map<number, string>();
+    users.forEach((user) => usernameById.set(user.id, user.username));
+
+    return {
+      ...device,
+      assignedToUsername: device.assignedToUsername || this.resolveUsername(device.assignedToUserId, usernameById),
+      createdByUsername: device.createdByUsername || this.resolveUsername(device.createdBy, usernameById),
+      lastEditByUsername: device.lastEditByUsername || this.resolveUsername(device.lastEditBy, usernameById)
+    };
+  }
+
+  private enrichDeviceUsers(device: Device) {
+    const usernames = [
+      device.assignedToUsername,
+      device.createdByUsername,
+      device.lastEditByUsername
+    ]
+      .filter((value): value is string => !!value)
+      .filter((value, index, array) => array.indexOf(value) === index);
+
+    if (usernames.length === 0) {
+      this.displayNameMap.clear();
+      return of(device);
+    }
+
+    return forkJoin(
+      usernames.map((username) =>
+        this.userService.searchLdap(username).pipe(
+          map((results) => ({ username, displayName: this.findExactDisplayName(results, username) }))
+        )
+      )
+    ).pipe(
+      map((entries) => {
+        this.displayNameMap.clear();
+        entries.forEach((entry) => {
+          if (entry.displayName) {
+            this.displayNameMap.set(entry.username, entry.displayName);
+          }
+        });
+        return device;
+      })
+    );
+  }
+
+  private findExactDisplayName(results: LdapUser[], username: string): string | null {
+    const exactMatch = results.find((result) => result.username.toLowerCase() === username.toLowerCase());
+    return exactMatch?.displayName?.trim() || null;
+  }
+
+  private resolveUsername(id: number | undefined, usernameById: Map<number, string>): string | undefined {
+    if (!id) return undefined;
+    return usernameById.get(id);
+  }
+
+  private formatUserLabel(username?: string): string {
+    if (!username) return '-';
+    const displayName = this.displayNameMap.get(username);
+    return displayName ? `${displayName} (${username})` : username;
   }
 }

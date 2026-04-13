@@ -119,7 +119,7 @@ router.get('/ldap/search', requireAuth, requireActivated, async (req, res) => {
 router.get('/users', requireAuth, requireActivated, async (_req, res) => {
   try {
     const { rows } = await pool.query(
-      'SELECT id, "adGuid", username, role, "isActivated", "createdAt", "lastLogin" FROM users ORDER BY username ASC'
+      'SELECT id, "adGuid", username, role, "isActivated", "createdAt", "lastLogin", "previouslyLoggedIn" FROM users ORDER BY username ASC'
     );
     return res.json(rows);
   } catch (error) {
@@ -137,7 +137,7 @@ router.post('/users/resolve-ldap', requireAuth, requireActivated, async (req, re
 
   try {
     const existing = await pool.query(
-      'SELECT id, "adGuid", username, role, "isActivated", "createdAt", "lastLogin" FROM users WHERE LOWER(username) = LOWER($1) LIMIT 1',
+      'SELECT id, "adGuid", username, role, "isActivated", "createdAt", "lastLogin", "previouslyLoggedIn" FROM users WHERE LOWER(username) = LOWER($1) LIMIT 1',
       [username]
     );
 
@@ -146,9 +146,9 @@ router.post('/users/resolve-ldap', requireAuth, requireActivated, async (req, re
     }
 
     const { rows } = await pool.query(
-      `INSERT INTO users ("adGuid", username, role, "createdAt", "lastLogin", "isActivated")
-       VALUES ($1, $2, 0, NOW(), NOW(), FALSE)
-       RETURNING id, "adGuid", username, role, "isActivated", "createdAt", "lastLogin"`,
+      `INSERT INTO users ("adGuid", username, role, "createdAt", "lastLogin", "isActivated", "previouslyLoggedIn")
+       VALUES ($1, $2, 0, NOW(), NOW(), FALSE, FALSE)
+       RETURNING id, "adGuid", username, role, "isActivated", "createdAt", "lastLogin", "previouslyLoggedIn"`,
       [username, username]
     );
 
@@ -173,7 +173,7 @@ router.patch('/users/:id/role', requireAuth, requireActivated, requireAdmin, asy
 
   try {
     const { rows } = await pool.query(
-      'UPDATE users SET role = $1 WHERE id = $2 RETURNING id, "adGuid", username, role, "isActivated", "createdAt", "lastLogin"',
+      'UPDATE users SET role = $1 WHERE id = $2 RETURNING id, "adGuid", username, role, "isActivated", "createdAt", "lastLogin", "previouslyLoggedIn"',
       [role, id]
     );
 
@@ -205,7 +205,7 @@ router.patch('/users/:id/activate', requireAuth, requireActivated, requireAdmin,
 
   try {
     const { rows } = await pool.query(
-      'UPDATE users SET "isActivated" = $1 WHERE id = $2 RETURNING id, "adGuid", username, role, "isActivated", "createdAt", "lastLogin"',
+      'UPDATE users SET "isActivated" = $1 WHERE id = $2 RETURNING id, "adGuid", username, role, "isActivated", "createdAt", "lastLogin", "previouslyLoggedIn"',
       [req.body.activated, id]
     );
 

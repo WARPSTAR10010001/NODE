@@ -2,29 +2,29 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 
 export type Theme = 'light' | 'dark';
-export type Contrast = "contrast" | "no-contrast";
+export type Accent = 'blue' | 'green' | 'pink' | 'orange' | 'purple';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ThemeService {
   themeKey = "theme";
-  contrastKey = "contrast";
+  accentKey = "accent"
 
   currentThemeSubject = new BehaviorSubject<Theme>('light');
-  currentContrastSubject = new BehaviorSubject<Contrast>("no-contrast");
+  currentAccentSubject = new BehaviorSubject<Accent>('blue');
 
   currentTheme$ = this.currentThemeSubject.asObservable();
-  currentContrast$ = this.currentContrastSubject.asObservable();
+  currentAccent$ = this.currentAccentSubject.asObservable();
 
   constructor() {
     const savedThemeRaw = localStorage.getItem(this.themeKey);
     const theme = this.sanitizeTheme(savedThemeRaw);
     this.setTheme(theme, false);
 
-    const savedContrastRaw = localStorage.getItem(this.contrastKey);
-    const contrast = this.sanitizeContrast(savedContrastRaw);
-    this.setContrast(contrast, false);
+    const savedAccentRaw = localStorage.getItem(this.accentKey);
+    const accent = this.sanitizeAccent(savedAccentRaw);
+    this.setAccent(accent, false);
   }
 
   private sanitizeTheme(raw: string | null): Theme {
@@ -33,10 +33,10 @@ export class ThemeService {
     return 'light';
   }
 
-  private sanitizeContrast(raw: string | null): Contrast {
-    if (raw === 'contrast' || raw === 'no-contrast') return raw;
-    if (raw) localStorage.setItem(this.contrastKey, 'no-contrast');
-    return 'no-contrast';
+  private sanitizeAccent(raw: string | null) {
+    if (raw === 'blue' || raw === 'green' || raw === 'pink' || raw === 'orange' || raw === 'purple') return raw;
+    if (raw) localStorage.setItem(this.accentKey, 'blue');
+    return 'blue';
   }
 
   setTheme(theme: Theme, save = true) {
@@ -54,18 +54,18 @@ export class ThemeService {
     return this.currentThemeSubject.value;
   }
 
-  setContrast(contrast: Contrast, save = true) {
-    document.body.classList.remove('contrast', 'no-contrast');
-    document.body.classList.add(contrast);
+  setAccent(accent: Accent, save = true) {
+    document.body.classList.remove('blue', 'green', 'pink', 'orange', 'purple');
+    document.body.classList.add(accent);
 
-    this.currentContrastSubject.next(contrast);
+    this.currentAccentSubject.next(accent);
 
     if (save) {
-      localStorage.setItem(this.contrastKey, contrast);
+      localStorage.setItem(this.accentKey, accent);
     }
   }
 
-  getContrast(): Contrast {
-    return this.currentContrastSubject.value;
+  getAccent(): Accent {
+    return this.currentAccentSubject.value;
   }
 }

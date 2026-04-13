@@ -14,6 +14,7 @@ export interface UserRecord {
   username: string;
   role: number;
   isActivated: boolean;
+  previouslyLoggedIn: boolean;
   createdAt: string;
   lastLogin?: string;
 }
@@ -36,5 +37,13 @@ export class UserService {
 
   resolveLdapUser(username: string): Observable<{ user: UserRecord }> {
     return this.http.post<{ user: UserRecord }>(`${this.apiUrl}/resolve-ldap`, { username });
+  }
+
+  updateRole(id: number, role: 0 | 1 | 2): Observable<{ user: UserRecord }> {
+    return this.http.patch<{ user: UserRecord }>(`${this.apiUrl}/${id}/role`, { role });
+  }
+
+  setActivation(id: number, activated: boolean): Observable<{ user: UserRecord }> {
+    return this.http.patch<{ user: UserRecord }>(`${this.apiUrl}/${id}/activate`, { activated });
   }
 }

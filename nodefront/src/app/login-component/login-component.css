@@ -71,7 +71,7 @@
 
 .acronym-letter {
   min-width: 10px;
-  color: var(--blue);
+  color: var(--accent);
   font-size: 3em;
   font-weight: 700;
   line-height: 1;

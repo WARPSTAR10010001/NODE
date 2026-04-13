@@ -42,8 +42,16 @@
         <p>{{ formatDate(device!.createdAt) }}</p>
       </div>
       <div class="form-field">
+        <label>Angelegt von</label>
+        <p>{{ formatCreatedBy() }}</p>
+      </div>
+      <div class="form-field">
         <label>Zuletzt geändert</label>
         <p>{{ formatDate(device!.lastEditAt) }}</p>
+      </div>
+      <div class="form-field">
+        <label>Zuletzt bearbeitet von</label>
+        <p>{{ formatLastEditedBy() }}</p>
       </div>
     </div>
   </section>

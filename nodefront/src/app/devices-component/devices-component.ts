@@ -7,6 +7,7 @@ import {
   debounceTime,
   distinctUntilChanged,
   forkJoin,
+  map,
   of,
   switchMap,
   takeUntil,
@@ -35,6 +36,10 @@ type SortField =
   | 'statusName'
   | 'locationCity'
   | 'networkEnvironmentName'
+  | 'latestTestTester'
+  | 'latestTestResult'
+  | 'latestTestLastTest'
+  | 'latestTestNextAt'
   | 'createdAt'
   | 'lastEditAt';
 
@@ -45,6 +50,14 @@ type FilterState = {
   statusId: string;
   locationId: string;
   networkEnvironmentId: string;
+  latestTestTester: string;
+  latestTestResult: string;
+  latestTestScale: string;
+  latestTestNextPeriod: string;
+  latestTestLastFrom: string;
+  latestTestLastTo: string;
+  latestTestNextFrom: string;
+  latestTestNextTo: string;
   createdFrom: string;
   createdTo: string;
   updatedFrom: string;
@@ -77,6 +90,7 @@ export class DevicesComponent implements OnInit, OnDestroy {
   searchTerm = '';
   ldapResults: LdapUser[] = [];
   ldapLoading = false;
+  private readonly displayNameMap = new Map<string, string>();
 
   private readonly destroy$ = new Subject<void>();
   private readonly assignedSearch$ = new Subject<string>();
@@ -154,7 +168,9 @@ export class DevicesComponent implements OnInit, OnDestroy {
   }
 
   formatAssignedUser(device: Device): string {
-    return device.assignedToUsername || 'Nicht zugewiesen';
+    if (!device.assignedToUsername) return 'Nicht zugewiesen';
+    const displayName = this.displayNameMap.get(device.assignedToUsername);
+    return displayName ? `${displayName} (${device.assignedToUsername})` : device.assignedToUsername;
   }
 
   formatDate(value?: string): string {
@@ -225,8 +241,18 @@ export class DevicesComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (responses: DeviceListResponse[]) => {
           this.allDevices = responses.flatMap((response) => response.items);
-          this.applyFiltersAndSorting();
-          this.loading = false;
+          this.enrichAssignedUsers(this.allDevices)
+            .pipe(takeUntil(this.destroy$))
+            .subscribe({
+              next: () => {
+                this.applyFiltersAndSorting();
+                this.loading = false;
+              },
+              error: () => {
+                this.applyFiltersAndSorting();
+                this.loading = false;
+              }
+            });
         },
         error: (error) => {
           console.error('Failed to load devices:', error);
@@ -353,6 +379,42 @@ export class DevicesComponent implements OnInit, OnDestroy {
         ]
       },
       {
+        key: 'latestTestTester',
+        label: 'Letzter Tester',
+        type: 'text',
+        value: this.draftFilters.latestTestTester,
+        placeholder: 'Nach Tester suchen'
+      },
+      {
+        key: 'latestTestResult',
+        label: 'Testergebnis',
+        type: 'select',
+        value: this.draftFilters.latestTestResult,
+        options: [
+          { value: '', label: 'Alle Ergebnisse' },
+          { value: 'pass', label: 'Bestanden' },
+          { value: 'fail', label: 'Nicht bestanden' }
+        ]
+      },
+      {
+        key: 'latestTestScale',
+        label: 'Testintervall Einheit',
+        type: 'select',
+        value: this.draftFilters.latestTestScale,
+        options: [
+          { value: '', label: 'Alle Einheiten' },
+          { value: 'months', label: 'Monate' },
+          { value: 'years', label: 'Jahre' }
+        ]
+      },
+      {
+        key: 'latestTestNextPeriod',
+        label: 'Testintervall',
+        type: 'number',
+        value: this.draftFilters.latestTestNextPeriod,
+        placeholder: 'z. B. 12'
+      },
+      {
         key: 'createdFrom',
         label: 'Erstellt ab',
         type: 'date',
@@ -375,6 +437,30 @@ export class DevicesComponent implements OnInit, OnDestroy {
         label: 'Geändert bis',
         type: 'date',
         value: this.draftFilters.updatedTo
+      },
+      {
+        key: 'latestTestLastFrom',
+        label: 'Letzter Test ab',
+        type: 'date',
+        value: this.draftFilters.latestTestLastFrom
+      },
+      {
+        key: 'latestTestLastTo',
+        label: 'Letzter Test bis',
+        type: 'date',
+        value: this.draftFilters.latestTestLastTo
+      },
+      {
+        key: 'latestTestNextFrom',
+        label: 'Nächster Test ab',
+        type: 'date',
+        value: this.draftFilters.latestTestNextFrom
+      },
+      {
+        key: 'latestTestNextTo',
+        label: 'Nächster Test bis',
+        type: 'date',
+        value: this.draftFilters.latestTestNextTo
       }
     ];
   }
@@ -386,6 +472,10 @@ export class DevicesComponent implements OnInit, OnDestroy {
       { value: 'statusName', label: 'Status' },
       { value: 'locationCity', label: 'Standort' },
       { value: 'networkEnvironmentName', label: 'Netzwerkumgebung' },
+      { value: 'latestTestTester', label: 'Letzter Tester' },
+      { value: 'latestTestResult', label: 'Testergebnis' },
+      { value: 'latestTestLastTest', label: 'Letzter Test' },
+      { value: 'latestTestNextAt', label: 'Nächster Test' },
       { value: 'createdAt', label: 'Erstellt am' },
       { value: 'lastEditAt', label: 'Geändert am' }
     ];
@@ -403,6 +493,14 @@ export class DevicesComponent implements OnInit, OnDestroy {
       statusId: '',
       locationId: '',
       networkEnvironmentId: '',
+      latestTestTester: '',
+      latestTestResult: '',
+      latestTestScale: '',
+      latestTestNextPeriod: '',
+      latestTestLastFrom: '',
+      latestTestLastTo: '',
+      latestTestNextFrom: '',
+      latestTestNextTo: '',
       createdFrom: '',
       createdTo: '',
       updatedFrom: '',
@@ -435,9 +533,7 @@ export class DevicesComponent implements OnInit, OnDestroy {
       return false;
     }
 
-    if (this.filters.assignedToUsername && (device.assignedToUsername || '') !== this.filters.assignedToUsername) {
-      return false;
-    }
+    if (!this.matchesAssignedUserFilter(device)) return false;
 
     if (this.filters.categoryId && String(device.categoryId || '') !== this.filters.categoryId) {
       return false;
@@ -455,11 +551,38 @@ export class DevicesComponent implements OnInit, OnDestroy {
       return false;
     }
 
+    if (
+      this.filters.latestTestTester
+      && !String(device.latestTestTester || '').toLowerCase().includes(this.filters.latestTestTester.toLowerCase())
+    ) {
+      return false;
+    }
+
+    if (this.filters.latestTestResult && String(device.latestTestResult || '') !== this.filters.latestTestResult) {
+      return false;
+    }
+
+    if (this.filters.latestTestScale && String(device.latestTestScale || '') !== this.filters.latestTestScale) {
+      return false;
+    }
+
+    if (this.filters.latestTestNextPeriod && String(device.latestTestNextPeriod || '') !== this.filters.latestTestNextPeriod) {
+      return false;
+    }
+
     if (!this.matchesDateRange(device.createdAt, this.filters.createdFrom, this.filters.createdTo)) {
       return false;
     }
 
     if (!this.matchesDateRange(device.lastEditAt, this.filters.updatedFrom, this.filters.updatedTo)) {
+      return false;
+    }
+
+    if (!this.matchesDateRange(device.latestTestLastTest, this.filters.latestTestLastFrom, this.filters.latestTestLastTo)) {
+      return false;
+    }
+
+    if (!this.matchesDateRange(device.latestTestNextAt, this.filters.latestTestNextFrom, this.filters.latestTestNextTo)) {
       return false;
     }
 
@@ -518,8 +641,10 @@ export class DevicesComponent implements OnInit, OnDestroy {
   private sortValue(device: Device, field: SortField): string | number {
     switch (field) {
       case 'createdAt':
-      case 'lastEditAt': {
-        const time = new Date(device[field]).getTime();
+      case 'lastEditAt':
+      case 'latestTestLastTest':
+      case 'latestTestNextAt': {
+        const time = new Date(device[field] || '').getTime();
         return Number.isNaN(time) ? 0 : time;
       }
       default:
@@ -554,7 +679,56 @@ export class DevicesComponent implements OnInit, OnDestroy {
     };
 
     this.assignedSearch$.next(value);
-    this.refreshFilterOverlay();
+  }
+
+  private matchesAssignedUserFilter(device: Device): boolean {
+    if (this.filters.assignedToUsername) {
+      return (device.assignedToUsername || '').toLowerCase() === this.filters.assignedToUsername.toLowerCase();
+    }
+
+    if (!this.filters.assignedToDisplay.trim()) {
+      return true;
+    }
+
+    const filter = this.filters.assignedToDisplay.trim().toLowerCase();
+    const username = String(device.assignedToUsername || '').toLowerCase();
+    const displayName = String(this.displayNameMap.get(device.assignedToUsername || '') || '').toLowerCase();
+    const combined = displayName ? `${displayName} (${username})` : username;
+
+    return combined.includes(filter) || username.includes(filter) || displayName.includes(filter);
+  }
+
+  private enrichAssignedUsers(devices: Device[]) {
+    const usernames = devices
+      .map((device) => device.assignedToUsername)
+      .filter((value): value is string => !!value)
+      .filter((value, index, array) => array.indexOf(value) === index);
+
+    if (usernames.length === 0) {
+      this.displayNameMap.clear();
+      return of(devices);
+    }
+
+    return forkJoin(
+      usernames.map((username) =>
+        this.userService.searchLdap(username).pipe(
+          map((results) => ({
+            username,
+            displayName: results.find((result) => result.username.toLowerCase() === username.toLowerCase())?.displayName?.trim() || ''
+          }))
+        )
+      )
+    ).pipe(
+      map((entries) => {
+        this.displayNameMap.clear();
+        entries.forEach((entry) => {
+          if (entry.displayName) {
+            this.displayNameMap.set(entry.username, entry.displayName);
+          }
+        });
+        return devices;
+      })
+    );
   }
 
   private setupLdapSearch(): void {

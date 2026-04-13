@@ -154,9 +154,10 @@ async function upsertLocalUser(adGuid, username) {
       UPDATE users
       SET "adGuid" = $1,
           username = $2,
-          "lastLogin" = NOW()
+          "lastLogin" = NOW(),
+          "previouslyLoggedIn" = TRUE
       WHERE id = $3
-      RETURNING id, "adGuid", username, role, "lastLogin", "isActivated"
+      RETURNING id, "adGuid", username, role, "lastLogin", "isActivated", "previouslyLoggedIn"
       `,
       [adGuid, normalizedUsername, existing.rows[0].id]
     );
@@ -166,9 +167,9 @@ async function upsertLocalUser(adGuid, username) {
 
   const { rows } = await pool.query(
     `
-    INSERT INTO users ("adGuid", username, role, "createdAt", "lastLogin", "isActivated")
-    VALUES ($1, $2, 0, NOW(), NOW(), FALSE)
-    RETURNING id, "adGuid", username, role, "lastLogin", "isActivated"
+    INSERT INTO users ("adGuid", username, role, "createdAt", "lastLogin", "isActivated", "previouslyLoggedIn")
+    VALUES ($1, $2, 0, NOW(), NOW(), FALSE, TRUE)
+    RETURNING id, "adGuid", username, role, "lastLogin", "isActivated", "previouslyLoggedIn"
     `,
     [adGuid, normalizedUsername]
   );
@@ -261,6 +262,7 @@ router.get('/auth/status', async (req, res) => {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
     const { rows } = await pool.query(
       `SELECT id, "adGuid", username, role, "lastLogin", "isActivated"
+      , "previouslyLoggedIn"
        FROM users
        WHERE id = $1`,
       [payload.sub]

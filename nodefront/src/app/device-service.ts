@@ -27,8 +27,10 @@ export interface Device {
   contractType?: 'purchase' | 'pay-per-page' | 'lease';
   notes?: string;
   createdBy?: number;
+  createdByUsername?: string;
   createdAt: string;
   lastEditBy?: number;
+  lastEditByUsername?: string;
   lastEditAt: string;
   categoryName?: string;
   statusName?: string;
@@ -55,6 +57,14 @@ export interface DeviceListResponse {
   pageSize: number;
   total: number;
   items: Device[];
+}
+
+export interface ElectronicTestPayload {
+  tester: string;
+  lastTest: string;
+  lastTestResult: 'pass' | 'fail';
+  nextTestPeriod: number;
+  scale: 'months' | 'years';
 }
 
 export interface CreateDevicePayload {
@@ -129,5 +139,13 @@ export class DeviceService {
 
   delete(id: number): Observable<{ deleted: boolean }> {
     return this.http.delete<{ deleted: boolean }>(`${this.base}/devices/${id}`);
+  }
+
+  createElectronicTest(deviceId: number, payload: ElectronicTestPayload): Observable<{ electronicTest: unknown }> {
+    return this.http.post<{ electronicTest: unknown }>(`${this.base}/devices/${deviceId}/electronic-tests`, payload);
+  }
+
+  updateElectronicTest(testId: number, payload: Partial<ElectronicTestPayload>): Observable<{ electronicTest: unknown }> {
+    return this.http.patch<{ electronicTest: unknown }>(`${this.base}/electronic-tests/${testId}`, payload);
   }
 }

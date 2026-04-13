@@ -3,7 +3,6 @@
     <hr>
     <h1>Ger&auml;te&uuml;bersicht</h1>
   </div>
-
   <section class="devices-toolbar">
     <div class="search-bar">
       <label for="device-search" class="search-label">Suche</label>
@@ -24,9 +23,6 @@
       </div>
     </div>
   </section>
-
-  <hr>
-
   @if (loading) {
   <section class="state-card">
     <h2>Lade Ger&auml;te...</h2>
@@ -84,9 +80,7 @@
     </div>
   </section>
   }
-
   @if (!loading && total > 0) {
-  <hr>
   <section class="pagination-section">
     <div class="pagination-summary">
       <span>{{ total }} Ger&auml;te insgesamt</span>
@@ -99,7 +93,6 @@
       <span>{{ activeFilterCount }} aktive Filter</span>
       }
     </div>
-
     <div class="pagination-controls">
       @if (page > 1) {
       <button type="button" (click)="onPageChange(page - 1)">Zur&uuml;ck</button>

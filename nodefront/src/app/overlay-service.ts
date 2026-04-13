@@ -6,7 +6,8 @@ export type OverlayType =
   | 'error'
   | 'success'
   | 'info'
-  | 'filter';
+  | 'filter'
+  | 'debug';
 
 export interface OverlayAction {
   label: string;

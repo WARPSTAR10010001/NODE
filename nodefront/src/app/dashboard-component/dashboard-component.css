@@ -52,11 +52,11 @@
 
 .quicklink-card:hover h1,
 .quicklink-card:hover p {
-    color: var(--blue);
+    color: var(--accent);
 }
 
 .quicklink-card:hover hr {
-    border-color: var(--blue);
+    border-color: var(--accent);
 }
 
 .fact-card,
@@ -84,7 +84,7 @@
 }
 
 .fact-card h1 {
-    color: var(--blue);
+    color: var(--accent);
     font-size: 0.em;
     font-size: 0.75em;
 }

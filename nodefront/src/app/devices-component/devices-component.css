@@ -80,7 +80,7 @@
 }
 
 .device-table th {
-  color: var(--blue);
+  color: var(--accent);
   font-size: 1.2em;
 }
 
@@ -91,7 +91,7 @@
 .table-header-divider hr {
   margin: 0;
   border-width: 2px;
-  border-color: var(--blue);
+  border-color: var(--accent);
 }
 
 .device-table td {
@@ -152,9 +152,9 @@
 }
 
 .pagination-controls button.active {
-  background-color: var(--blue) !important;
+  background-color: var(--accent) !important;
   color: var(--bgc) !important;
-  border-color: var(--blue) !important;
+  border-color: var(--accent) !important;
 }
 
 @media (max-width: 900px) {

@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { combineLatest } from 'rxjs';
 
 import { Category, CategoryService } from '../category-service';
@@ -15,7 +15,7 @@ type ManageItem = Category | Status | Location | NetworkEnvironment;
 
 @Component({
   selector: 'app-manage-component',
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule],
   templateUrl: './manage-component.html',
   styleUrl: './manage-component.css',
 })
@@ -29,7 +29,9 @@ export class ManageComponent implements OnInit {
 
   type: ManageType = 'category';
   items: ManageItem[] = [];
+  filteredItems: ManageItem[] = [];
   loading = false;
+  searchTerm = '';
   editingId: number | null = null;
   draft: Record<string, string> = {};
 
@@ -61,50 +63,53 @@ export class ManageComponent implements OnInit {
     });
   }
 
-  get title(): string {
-    return this.options.find((option) => option.id === this.type)?.label ?? 'Verwaltung';
-  }
-
-  get createLabel(): string {
-    switch (this.type) {
-      case 'category':
-        return 'Kategorie erstellen';
-      case 'status':
-        return 'Status erstellen';
-      case 'location':
-        return 'Standort erstellen';
-      case 'network-environment':
-        return 'Netzwerkumgebung erstellen';
-    }
-  }
-
   onTypeChange(type: ManageType): void {
+    this.searchTerm = '';
     this.router.navigate(['/manage'], {
       queryParams: type === 'category' ? {} : { type }
     });
+  }
+
+  onSearchChange(): void {
+    this.applyFilters();
+  }
+
+  clearSearch(): void {
+    this.searchTerm = '';
+    this.applyFilters();
   }
 
   isLocation(item: ManageItem): item is Location {
     return this.type === 'location';
   }
 
+  isNetworkEnvironment(item: ManageItem): item is NetworkEnvironment {
+    return this.type === 'network-environment';
+  }
+
   startEdit(item: ManageItem): void {
     this.editingId = item.id;
-    if (this.type === 'location') {
-      const location = item as Location;
+
+    if (this.isLocation(item)) {
       this.draft = {
-        city: location.city ?? '',
-        address: location.address ?? '',
-        houseNumber: location.houseNumber ?? '',
-        room: location.room ?? ''
+        city: item.city ?? '',
+        address: item.address ?? '',
+        houseNumber: item.houseNumber ?? ''
       };
       return;
     }
 
-    const base = item as Category | Status | NetworkEnvironment;
+    if (this.isNetworkEnvironment(item)) {
+      this.draft = {
+        name: item.name ?? ''
+      };
+      return;
+    }
+
+    const base = item as Category | Status;
     this.draft = {
       name: base.name ?? '',
-      description: 'description' in base ? (base.description ?? '') : ''
+      description: base.description ?? ''
     };
   }
 
@@ -139,8 +144,7 @@ export class ManageComponent implements OnInit {
         this.locationService.update(item.id, {
           city: this.draft['city'],
           address: this.draft['address'],
-          houseNumber: this.draft['houseNumber'],
-          room: this.draft['room']
+          houseNumber: this.draft['houseNumber']
         }).subscribe({
           next: () => this.finishMutation('Standort aktualisiert.'),
           error: (error) => this.handleError(error, 'Standort konnte nicht aktualisiert werden.')
@@ -188,6 +192,10 @@ export class ManageComponent implements OnInit {
     }
   }
 
+  get hasItems(): boolean {
+    return this.filteredItems.length > 0;
+  }
+
   private load(): void {
     this.loading = true;
     this.cancelEdit();
@@ -222,7 +230,33 @@ export class ManageComponent implements OnInit {
 
   private setItems(items: ManageItem[]): void {
     this.items = items;
+    this.applyFilters();
     this.loading = false;
+  }
+
+  private applyFilters(): void {
+    const search = this.searchTerm.trim().toLowerCase();
+
+    this.filteredItems = this.items.filter((item) => {
+      if (!search) return true;
+
+      if (this.isLocation(item)) {
+        return [
+          item.city,
+          item.address,
+          item.houseNumber,
+          item.room
+        ].some((value) => String(value || '').toLowerCase().includes(search));
+      }
+
+      if (this.isNetworkEnvironment(item)) {
+        return item.name.toLowerCase().includes(search);
+      }
+
+      const base = item as Category | Status;
+      return base.name.toLowerCase().includes(search)
+        || String(base.description || '').toLowerCase().includes(search);
+    });
   }
 
   private finishMutation(message: string): void {

@@ -1,3 +1,261 @@
-<div class="cc">
-    
+<div class="detail-page">
+  <div class="title">
+    <hr>
+    <h1>Gerätebearbeitung {{ device?.inventoryNumber }}</h1>
+  </div>
+
+  @if (loading) {
+  <section class="form-section state-card">
+    <h2>Lade Gerät...</h2>
+    <p>Die Bearbeitungsansicht wird vorbereitet.</p>
+  </section>
+  } @else if (!device) {
+  <section class="form-section state-card">
+    <h2>Gerät nicht gefunden</h2>
+    <p>{{ errorMessage || 'Für die angegebene URL konnte kein Gerät geladen werden.' }}</p>
+    <div class="action-group">
+      <button type="button" (click)="goBack()">Zurück zur Detailansicht</button>
+    </div>
+  </section>
+  } @else {
+  <form [formGroup]="form" (ngSubmit)="save()" class="create-form">
+    <section class="topbar">
+      <div>
+        <label>Name</label>
+        <p class="topbar-value">{{ form.get('name')?.value || '-' }}</p>
+      </div>
+      <div class="action-group">
+        <button type="button" (click)="goToOverview()">Zurück zur Geräteübersicht</button>
+        <button type="button" (click)="goBack()">Zurück zur Detailansicht</button>
+        <button type="button" class="danger" [disabled]="deleting" (click)="deleteDevice()">
+          {{ deleting ? 'Lösche...' : 'Löschen' }}
+        </button>
+        <button type="submit" class="confirm" [disabled]="form.invalid || saving">
+          {{ saving ? 'Speichere...' : 'Speichern' }}
+        </button>
+      </div>
+    </section>
+
+    <section class="form-section">
+      <h1>Systemdaten</h1>
+      <div class="field-grid">
+        <div class="form-field">
+          <label>Erstellt am</label>
+          <p>{{ device.createdAt }}</p>
+        </div>
+        <div class="form-field">
+          <label>Angelegt von</label>
+          <p>{{ formatCreatedBy() }}</p>
+        </div>
+        <div class="form-field">
+          <label>Zuletzt geändert</label>
+          <p>{{ device.lastEditAt }}</p>
+        </div>
+        <div class="form-field">
+          <label>Zuletzt bearbeitet von</label>
+          <p>{{ formatLastEditedBy() }}</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="form-section">
+      <h1>Gerät</h1>
+      <div class="field-grid">
+        <div class="form-field" [class.invalid]="controlInvalid('name')">
+          <label for="name">Name *</label>
+          <input id="name" formControlName="name">
+        </div>
+        <div class="form-field" [class.invalid]="controlInvalid('categoryId')">
+          <label for="categoryId">Kategorie *</label>
+          <select id="categoryId" formControlName="categoryId">
+            <option [ngValue]="null">Auswählen</option>
+            @for (category of categories; track category.id) {
+            <option [ngValue]="category.id">{{ category.name }}</option>
+            }
+          </select>
+        </div>
+        <div class="form-field" [class.invalid]="controlInvalid('statusId')">
+          <label for="statusId">Status *</label>
+          <select id="statusId" formControlName="statusId">
+            <option [ngValue]="null">Auswählen</option>
+            @for (status of statuses; track status.id) {
+            <option [ngValue]="status.id">{{ status.name }}</option>
+            }
+          </select>
+        </div>
+        <div class="form-field ldap-field">
+          <label for="assignedSearch">Zugewiesen an</label>
+          <div class="ldap-input-row" [class.with-clear-button]="!!form.get('assignedToUserId')?.value">
+            <input id="assignedSearch" list="ldap-users" [ngModel]="assignedSearch"
+              [ngModelOptions]="{ standalone: true }" [readonly]="!!form.get('assignedToUserId')?.value"
+              (ngModelChange)="onAssignedSearchChange($event)">
+            @if (form.get('assignedToUserId')?.value) {
+            <button type="button" class="danger" (click)="clearAssignedUser()">X</button>
+            }
+          </div>
+          <datalist id="ldap-users">
+            @for (result of ldapResults; track result.username) {
+            <option [value]="result.displayName + ' (' + result.username + ')'"></option>
+            }
+          </datalist>
+        </div>
+        <div class="form-field">
+          <label for="manufacturer">Hersteller</label>
+          <input id="manufacturer" formControlName="manufacturer">
+        </div>
+        <div class="form-field">
+          <label for="model">Modell</label>
+          <input id="model" formControlName="model">
+        </div>
+        <div class="form-field">
+          <label for="serialNumber">Seriennummer</label>
+          <input id="serialNumber" formControlName="serialNumber">
+        </div>
+        <div class="form-field">
+          <label for="locationId">Standort</label>
+          <select id="locationId" formControlName="locationId">
+            <option [ngValue]="null">Keiner</option>
+            @for (location of locations; track location.id) {
+            <option [ngValue]="location.id">{{ formatLocation(location) }}</option>
+            }
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <section class="form-section">
+      <h1>Beschaffung</h1>
+      <div class="field-grid">
+        <div class="form-field">
+          <label for="purchase">Kaufdatum</label>
+          <input id="purchase" type="date" formControlName="purchase">
+        </div>
+        <div class="form-field">
+          <label for="price">Preis</label>
+          <input id="price" type="number" step="0.01" min="0" formControlName="price">
+        </div>
+        <div class="form-field">
+          <label for="supplier">Lieferant</label>
+          <input id="supplier" formControlName="supplier">
+        </div>
+        <div class="form-field">
+          <label for="accountingType">Buchungstyp</label>
+          <select id="accountingType" formControlName="accountingType">
+            <option value="konsumtiv">Konsumtiv</option>
+            <option value="investiv">Investiv</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="depreciationTime">Abschreibung Zeit</label>
+          <input id="depreciationTime" type="number" min="0" step="1" formControlName="depreciationTime">
+        </div>
+        <div class="form-field">
+          <label for="depreciationScale">Abschreibung Einheit</label>
+          <select id="depreciationScale" formControlName="depreciationScale">
+            <option value="">Keine</option>
+            <option value="months">Monate</option>
+            <option value="years">Jahre</option>
+          </select>
+        </div>
+      </div>
+      <hr class="section-divider">
+      <h1>Für Drucker</h1>
+      <div class="field-grid printer-grid">
+        <div class="form-field">
+          <label for="contractType">Vertragsart</label>
+          <select id="contractType" formControlName="contractType">
+            <option value="">Keine</option>
+            <option value="purchase">Kauf</option>
+            <option value="lease">Leasing</option>
+            <option value="pay-per-page">Pay per Page</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="leaseDurationMonths">Laufzeit Monate</label>
+          <input id="leaseDurationMonths" type="number" min="0" step="1" formControlName="leaseDurationMonths">
+        </div>
+      </div>
+    </section>
+
+    <section class="form-section">
+      <h1>Netzwerk</h1>
+      <div class="field-grid">
+        <div class="form-field">
+          <label for="networkEnvironmentId">Netzwerkumgebung</label>
+          <select id="networkEnvironmentId" formControlName="networkEnvironmentId">
+            <option [ngValue]="null">Keine</option>
+            @for (networkEnvironment of networkEnvironments; track networkEnvironment.id) {
+            <option [ngValue]="networkEnvironment.id">{{ networkEnvironment.name }}</option>
+            }
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="ipAddress">IP-Adresse</label>
+          <input id="ipAddress" formControlName="ipAddress">
+        </div>
+        <div class="form-field">
+          <label for="patchPanelLabel">Patchpanel / Port</label>
+          <input id="patchPanelLabel" formControlName="patchPanelLabel">
+        </div>
+      </div>
+      <hr class="section-divider">
+      <div class="mac-block" formArrayName="macAddresses">
+        <div class="subbar">
+          <h1>MAC-Adressen</h1>
+          <button type="button" (click)="addMacAddress()">Adresse hinzufügen</button>
+        </div>
+        <div class="mac-list">
+          @for (macControl of macAddresses.controls; track macControl; let index = $index) {
+          <div class="mac-row">
+            <div class="form-field compact" [class.invalid]="macControlInvalid(index)">
+              <label [for]="'mac-' + index">Adresse #{{ index + 1 }}</label>
+              <input [id]="'mac-' + index" [formControlName]="index" placeholder="00:11:22:33:44:55">
+            </div>
+            <button type="button" class="danger" (click)="removeMacAddress(index)">X</button>
+          </div>
+          }
+        </div>
+      </div>
+    </section>
+
+    <section class="form-section">
+      <h1>Prüfung</h1>
+      <div class="field-grid">
+        <div class="form-field">
+          <label for="latestTestTester">Letzter Tester</label>
+          <input id="latestTestTester" formControlName="latestTestTester">
+        </div>
+        <div class="form-field">
+          <label for="latestTestLastTest">Letzter Test</label>
+          <input id="latestTestLastTest" type="date" formControlName="latestTestLastTest">
+        </div>
+        <div class="form-field">
+          <label for="latestTestResult">Letztes Testergebnis</label>
+          <select id="latestTestResult" formControlName="latestTestResult">
+            <option value="">Keine Angabe</option>
+            <option value="pass">Bestanden</option>
+            <option value="fail">Nicht bestanden</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="latestTestNextPeriod">Testintervall</label>
+          <input id="latestTestNextPeriod" type="number" min="1" step="1" formControlName="latestTestNextPeriod">
+        </div>
+        <div class="form-field">
+          <label for="latestTestNextAt">Nächster Test</label>
+          <input id="latestTestNextAt" [value]="nextTestPreview" readonly>
+        </div>
+      </div>
+    </section>
+
+    <section class="form-section">
+      <h1>Notizen</h1>
+      <div class="field-grid single-column">
+        <div class="form-field full-width">
+          <textarea id="notes" rows="6" formControlName="notes"></textarea>
+        </div>
+      </div>
+    </section>
+  </form>
+  }
 </div>

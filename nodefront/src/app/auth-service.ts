@@ -13,6 +13,7 @@ export interface User {
   username: string;
   role: Role;
   isActivated: boolean;
+  previouslyLoggedIn: boolean;
   lastLogin: string;
 }
 

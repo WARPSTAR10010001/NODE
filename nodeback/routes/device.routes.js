@@ -209,6 +209,8 @@ router.get('/devices', requireAuth, requireActivated, async (req, res) => {
         l.room AS "locationRoom",
         ne.name AS "networkEnvironmentName",
         u.username AS "assignedToUsername",
+        cu.username AS "createdByUsername",
+        eu.username AS "lastEditByUsername",
         dep.time AS "depreciationTime",
         dep.scale AS "depreciationScale",
         ${depreciationEndSql} AS "depreciationEnd",
@@ -225,6 +227,8 @@ router.get('/devices', requireAuth, requireActivated, async (req, res) => {
       LEFT JOIN locations l ON l.id = d."locationId"
       LEFT JOIN network_environments ne ON ne.id = d."networkEnvironmentId"
       LEFT JOIN users u ON u.id = d."assignedToUserId"
+      LEFT JOIN users cu ON cu.id = d."createdBy"
+      LEFT JOIN users eu ON eu.id = d."lastEditBy"
       LEFT JOIN depreciations dep ON dep.id = d."depreciationId"
       LEFT JOIN LATERAL (
         SELECT *
@@ -265,6 +269,8 @@ router.get('/devices/:id', requireAuth, requireActivated, async (req, res) => {
         l.room AS "locationRoom",
         ne.name AS "networkEnvironmentName",
         u.username AS "assignedToUsername",
+        cu.username AS "createdByUsername",
+        eu.username AS "lastEditByUsername",
         dep.time AS "depreciationTime",
         dep.scale AS "depreciationScale",
         ${depreciationEndSql} AS "depreciationEnd",
@@ -281,6 +287,8 @@ router.get('/devices/:id', requireAuth, requireActivated, async (req, res) => {
       LEFT JOIN locations l ON l.id = d."locationId"
       LEFT JOIN network_environments ne ON ne.id = d."networkEnvironmentId"
       LEFT JOIN users u ON u.id = d."assignedToUserId"
+      LEFT JOIN users cu ON cu.id = d."createdBy"
+      LEFT JOIN users eu ON eu.id = d."lastEditBy"
       LEFT JOIN depreciations dep ON dep.id = d."depreciationId"
       LEFT JOIN LATERAL (
         SELECT *
@@ -435,6 +443,16 @@ router.patch('/devices/:id', requireAuth, requireActivated, requireEditor, async
   if (!id) return res.status(400).json({ error: 'Ungueltige Geraete-ID.' });
 
   const body = req.body || {};
+  let derivedDepreciationId;
+
+  try {
+    if (hasOwn(body, 'depreciationTime') || hasOwn(body, 'depreciationScale') || hasOwn(body, 'depreciationId')) {
+      derivedDepreciationId = await ensureDepreciationId(body);
+    }
+  } catch (error) {
+    return res.status(400).json({ error: String(error.message || error) });
+  }
+
   const fields = {
     name: { col: 'name', transform: (value) => (value === null ? null : String(value).trim()) },
     categoryId: { col: '"categoryId"', transform: (value) => (value === null ? null : toInt(value)) },
@@ -449,7 +467,7 @@ router.patch('/devices/:id', requireAuth, requireActivated, requireEditor, async
     },
     price: { col: 'price', transform: (value) => (value === null ? null : value) },
     supplier: { col: 'supplier', transform: (value) => (value === null ? null : String(value)) },
-    depreciationId: { col: '"depreciationId"', transform: (value) => (value === null ? null : toInt(value)) },
+    depreciationId: { col: '"depreciationId"', transform: () => derivedDepreciationId ?? null },
     accountingType: { col: '"accountingType"', transform: (value) => value },
     assignedToUserId: { col: '"assignedToUserId"', transform: (value) => (value === null ? null : toInt(value)) },
     locationId: { col: '"locationId"', transform: (value) => (value === null ? null : toInt(value)) },

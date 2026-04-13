@@ -1,13 +1,13 @@
 :root {
     --red: #ff0080;
     --green: #00ff91;
-    --blue: #0077ff;
     --white: #ffffff;
     --black: #131313;
+    --accent: #0077ff;
 }
 
 *::selection {
-    background-color: var(--blue);
+    background-color: var(--accent);
     color: var(--bgc);
 }
 
@@ -27,6 +27,26 @@ body.dark {
     --olc: #fff;
     --bsc: #000000;
     --bc: #131313;
+}
+
+body.blue {
+    --accent: #0077ff;
+}
+
+body.green {
+    --accent: #00bd39;
+}
+
+body.pink {
+    --accent: #ff0a5b;
+}
+
+body.orange {
+    --accent: #ff6c0a;
+}
+
+body.purple {
+    --accent: #9900ff;
 }
 
 body {
@@ -50,7 +70,7 @@ body {
 a:hover {
     cursor: pointer;
     text-decoration: none;
-    color: var(--blue);
+    color: var(--accent);
 }
 
 button {
@@ -114,8 +134,8 @@ input {
 }
 
 input:focus {
-    border: 3px solid var(--blue);
-    color: var(--blue);
+    border: 3px solid var(--accent);
+    color: var(--accent);
 }
 
 input[type="radio"] {
@@ -139,24 +159,24 @@ input[type="radio"]::before {
     width: 12px;
     height: 12px;
     border-radius: 50%;
-    background-color: var(--blue);
+    background-color: var(--accent);
     transform: scale(0);
     transition: transform 0.15s ease;
 }
 
 input[type="radio"]:hover {
-    border-color: var(--blue);
+    border-color: var(--accent);
     transform: scale(1.03);
 }
 
 input[type="radio"]:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue) 25%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
 }
 
 input[type="radio"]:checked {
-    border-color: var(--blue);
-    background-color: color-mix(in srgb, var(--blue) 12%, var(--bgc));
+    border-color: var(--accent);
+    background-color: color-mix(in srgb, var(--accent) 12%, var(--bgc));
 }
 
 input[type="radio"]:checked::before {
@@ -180,8 +200,8 @@ select {
 }
 
 select:focus {
-    border: 3px solid var(--blue);
-    color: var(--blue);
+    border: 3px solid var(--accent);
+    color: var(--accent);
 }
 
 p {
@@ -195,11 +215,11 @@ hr {
 }
 
 .title {
-    color: var(--blue);
+    color: var(--accent);
 }
 
 .title hr {
-    border: 2px solid var(--blue);
+    border: 2px solid var(--accent);
     border-radius: 5px;
     margin: 10px 0;
 }
@@ -227,8 +247,8 @@ textarea {
 }
 
 textarea:focus {
-    border: 3px solid var(--blue);
-    color: var(--blue);
+    border: 3px solid var(--accent);
+    color: var(--accent);
 }
 
 h1 {
@@ -243,8 +263,8 @@ h1 {
 
 .card {
     width: 100%;
-    background-color: var(--blue);
-    border: 3px solid var(--blue);
+    background-color: var(--accent);
+    border: 3px solid var(--accent);
     text-align: center;
     padding: 20px 0;
     font-size: 2.5em;
@@ -256,10 +276,11 @@ h1 {
 
 .card:hover {
     background-color: var(--bgc);
-    color: var(--blue);
+    color: var(--accent);
 }
 
-ul, ol {
+ul,
+ol {
     list-style-type: square;
     margin: -10px 0;
     font-size: 1.5em;

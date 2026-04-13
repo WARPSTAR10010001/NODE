@@ -39,7 +39,7 @@
 }
 
 #header a:hover {
-    color: var(--blue);
+    color: var(--accent);
 }
 
 #header-buttons button {
@@ -50,7 +50,7 @@
 }
 
 #header-buttons button:hover {
-    color: var(--blue);
+    color: var(--accent);
 }
 
 #footer {

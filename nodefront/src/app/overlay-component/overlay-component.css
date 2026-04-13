@@ -76,6 +76,11 @@ p {
   margin-bottom: 0;
 }
 
+.section-label + .filter-grid.filter-grid-top,
+.section-label + .filter-grid {
+  margin-top: 12px;
+}
+
 .filter-field {
   margin-bottom: 0;
 }
@@ -83,14 +88,14 @@ p {
 .filter-section {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 12px;
 }
 
 .section-label {
   margin: 0;
   font-size: 2em;
   line-height: 1;
-  color: var(--blue);
+  color: var(--accent);
 }
 
 .overlay-divider {
@@ -156,7 +161,7 @@ p {
 
 #style-overlay .option-card input[type="radio"]:checked {
   border-color: var(--tc);
-  background-color: var(--blue);
+  background-color: var(--accent);
 }
 
 #style-overlay .option-card input[type="radio"]:checked::before {

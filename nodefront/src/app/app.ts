@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, HostListener } from '@angular/core';
 import { RouterOutlet, RouterLink, Router } from '@angular/router';
 import { AuthService } from './auth-service';
 import { VersionService } from './version-service';
@@ -48,5 +48,22 @@ export class App {
 
   openStyleOverlay() {
     this.overlay.showOverlay("style");
+  }
+
+  @HostListener("document:keydown.shift.q", ["$event"])
+  onShiftQHandler(event: Event) {
+    this.openStyleOverlay();
+  }
+
+  @HostListener('document:keydown', ['$event'])
+  handleKey(event: KeyboardEvent) {
+    if (event.altKey && event.code === 'Period') {
+      event.preventDefault();
+      this.openDebugOverlay();
+    }
+  }
+
+  openDebugOverlay() {
+    this.overlay.showOverlay("debug");
   }
 }

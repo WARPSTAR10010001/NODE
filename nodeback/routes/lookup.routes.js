@@ -26,7 +26,7 @@ function handleLookupMutationError(error, res, messages) {
   }
 
   if (error?.code === '23503') {
-    return res.status(409).json({ error: 'Kann Datenstruktur nicht löschen, weil Datenstruktur wurde an Geräte zugewiesen.' });
+    return res.status(409).json({ error: 'Eintrag kann nicht gelöscht werden, weil er Geräten zugewiesen ist.' });
   }
 
   return res.status(500).json({ error: messages.generic });
