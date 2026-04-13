@@ -58,6 +58,7 @@ export class CreateComponent implements OnInit, OnDestroy {
   ldapResults: LdapUser[] = [];
   ldapLoading = false;
   assignedSearch = '';
+  nextTestPreview = '-';
 
   private assignedSearch$ = new Subject<string>();
   private destroy$ = new Subject<void>();
@@ -72,7 +73,7 @@ export class CreateComponent implements OnInit, OnDestroy {
     private networkEnvService: NetworkEnvironmentService,
     private userService: UserService,
     private overlay: OverlayService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.loadLookups();
@@ -172,10 +173,17 @@ export class CreateComponent implements OnInit, OnDestroy {
     }
   }
 
+  deleteForm() {
+    if (confirm("Formular wirklich leeren?")) {
+      this.clearForm();
+    }
+  }
+
   clearForm(showOverlay = true): void {
     this.buildForm();
     this.assignedSearch = '';
     this.ldapResults = [];
+    this.nextTestPreview = '-';
     if (showOverlay) {
       this.overlay.showOverlay('info', 'Formular wurde geleert.');
     }
@@ -183,6 +191,12 @@ export class CreateComponent implements OnInit, OnDestroy {
 
   onSubmit(): void {
     if (this.form.invalid || this.submitting) return;
+
+    const electronicTestError = this.validateElectronicTestSection();
+    if (electronicTestError) {
+      this.overlay.showOverlay('error', electronicTestError);
+      return;
+    }
 
     this.submitting = true;
 
@@ -295,8 +309,14 @@ export class CreateComponent implements OnInit, OnDestroy {
           macAddresses: this.fb.array([this.createMacAddressControl()]),
           leaseDurationMonths: [null],
           contractType: [''],
+          latestTestTester: [''],
+          latestTestLastTest: [''],
+          latestTestResult: [''],
+          latestTestNextPeriod: [null],
+          latestTestScale: ['months'],
           notes: ['']
         });
+        this.setupNextTestPreview();
         break;
       case 'category':
       case 'status':
@@ -318,6 +338,10 @@ export class CreateComponent implements OnInit, OnDestroy {
           name: ['', Validators.required]
         });
         break;
+    }
+
+    if (this.entityType !== 'device') {
+      this.nextTestPreview = '-';
     }
   }
 
@@ -352,8 +376,83 @@ export class CreateComponent implements OnInit, OnDestroy {
       macAddresses: macAddresses.length ? macAddresses : null,
       leaseDurationMonths: this.normalizeNumber(raw.leaseDurationMonths),
       contractType: this.normalizeText(raw.contractType),
+      latestTestTester: this.normalizeText(raw.latestTestTester),
+      latestTestLastTest: raw.latestTestLastTest || null,
+      latestTestResult: this.normalizeText(raw.latestTestResult),
+      latestTestNextPeriod: this.normalizeNumber(raw.latestTestNextPeriod),
+      latestTestScale: this.normalizeText(raw.latestTestScale),
       notes: this.normalizeText(raw.notes)
     };
+  }
+
+  private validateElectronicTestSection(): string | null {
+    if (this.entityType !== 'device') return null;
+
+    const raw = this.form.getRawValue();
+    const values = [
+      this.normalizeText(raw.latestTestTester),
+      raw.latestTestLastTest || null,
+      this.normalizeText(raw.latestTestResult),
+      this.normalizeNumber(raw.latestTestNextPeriod)
+    ];
+
+    const hasAnyValue = values.some((value) => value !== null);
+    const hasAllValues = values.every((value) => value !== null);
+
+    if (!hasAnyValue) return null;
+    if (!hasAllValues) {
+      return 'Für die Prüfungssektion bitte letzter Tester, letzter Test, Testergebnis und Testintervall vollständig ausfüllen.';
+    }
+
+    return null;
+  }
+
+  private setupNextTestPreview(): void {
+    this.updateNextTestPreview();
+
+    this.form.get('latestTestLastTest')?.valueChanges
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.updateNextTestPreview());
+
+    this.form.get('latestTestNextPeriod')?.valueChanges
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.updateNextTestPreview());
+
+    this.form.get('latestTestScale')?.valueChanges
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.updateNextTestPreview());
+  }
+
+  private updateNextTestPreview(): void {
+    if (this.entityType !== 'device') {
+      this.nextTestPreview = '-';
+      return;
+    }
+
+    const lastTest = this.form?.get('latestTestLastTest')?.value;
+    const nextPeriod = this.normalizeNumber(this.form?.get('latestTestNextPeriod')?.value);
+    const scale = this.form?.get('latestTestScale')?.value || 'months';
+
+    if (!lastTest || !nextPeriod) {
+      this.nextTestPreview = '-';
+      return;
+    }
+
+    const baseDate = new Date(lastTest);
+    if (Number.isNaN(baseDate.getTime())) {
+      this.nextTestPreview = '-';
+      return;
+    }
+
+    if (scale === 'years') {
+      baseDate.setFullYear(baseDate.getFullYear() + nextPeriod);
+    } else {
+      baseDate.setMonth(baseDate.getMonth() + nextPeriod);
+    }
+
+    this.nextTestPreview = Number.isNaN(baseDate.getTime())
+      ? '-'
+      : baseDate.toLocaleDateString('de-DE');
   }
 
   private buildNameDescriptionPayload() {

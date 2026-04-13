@@ -173,6 +173,35 @@
       </div>
     </section>
     <section class="form-section">
+      <h1>Prüfung</h1>
+      <div class="field-grid">
+        <div class="form-field">
+          <label for="latestTestTester">Letzter Tester</label>
+          <input id="latestTestTester" formControlName="latestTestTester">
+        </div>
+        <div class="form-field">
+          <label for="latestTestLastTest">Letzter Test</label>
+          <input id="latestTestLastTest" type="date" formControlName="latestTestLastTest">
+        </div>
+        <div class="form-field">
+          <label for="latestTestResult">Letztes Testergebnis</label>
+          <select id="latestTestResult" formControlName="latestTestResult">
+            <option value="">Keine Angabe</option>
+            <option value="pass">Bestanden</option>
+            <option value="fail">Nicht bestanden</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="latestTestNextPeriod">Testintervall (Monate)</label>
+          <input id="latestTestNextPeriod" type="number" min="1" step="1" formControlName="latestTestNextPeriod">
+        </div>
+        <div class="form-field">
+          <label for="latestTestNextAt">Nächster Test</label>
+          <input id="latestTestNextAt" [value]="nextTestPreview" readonly>
+        </div>
+      </div>
+    </section>
+    <section class="form-section">
       <h1>Notizen</h1>
       <div class="field-grid single-column">
         <div class="form-field full-width">
@@ -231,7 +260,7 @@
     </section>
     }
     <div class="form-actions">
-      <button type="button" (click)="clearForm()" class="danger">Formular leeren</button>
+      <button type="button" (click)="deleteForm()" class="danger">Formular leeren</button>
       <button type="submit" class="confirm" [disabled]="form.invalid || submitting">
         Erstellen
       </button>

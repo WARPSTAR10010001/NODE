@@ -1,0 +1,85 @@
+.detail-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.topbar,
+.form-section {
+  background-color: var(--bgc);
+  border: 3px solid var(--tc);
+  border-radius: 5px;
+  padding: 20px;
+}
+
+.topbar {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.form-section h1 {
+  margin: 0 0 16px;
+}
+
+.field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 20px;
+}
+
+.single-column {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-field p,
+.topbar-value,
+.state-card p,
+.state-card h2 {
+  margin: 0;
+  word-break: break-word;
+}
+
+.topbar-value {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+}
+
+.form-actions,
+.action-group {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.action-group {
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.full-width {
+  grid-column: 1 / -1;
+}
+
+.notes {
+  white-space: pre-wrap;
+}
+
+@media (max-width: 900px) {
+  .topbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .field-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

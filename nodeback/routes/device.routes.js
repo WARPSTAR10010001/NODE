@@ -34,6 +34,52 @@ function normalizeMacArray(value) {
   return undefined;
 }
 
+function normalizeElectronicTestPayload(body) {
+  const hasAnyField = [
+    'latestTestTester',
+    'latestTestLastTest',
+    'latestTestResult',
+    'latestTestNextPeriod',
+    'latestTestScale'
+  ].some((key) => hasOwn(body, key) && body[key] !== undefined && body[key] !== null && body[key] !== '');
+
+  if (!hasAnyField) return null;
+
+  const tester = String(body.latestTestTester || '').trim();
+  const lastTestDate = toDate(body.latestTestLastTest);
+  const lastTestResult = String(body.latestTestResult || '').trim();
+  const nextTestPeriod = toInt(body.latestTestNextPeriod);
+  const scale = String(body.latestTestScale || 'months').trim().toLowerCase();
+
+  if (!tester || !body.latestTestLastTest || !lastTestResult || !nextTestPeriod) {
+    throw new Error('Für eine Geräteprüfung sind letzter Tester, letzter Test, Testergebnis und Testintervall erforderlich.');
+  }
+
+  if (lastTestDate === undefined) {
+    throw new Error('latestTestLastTest muss ein gueltiges Datum sein.');
+  }
+
+  if (!['pass', 'fail'].includes(lastTestResult)) {
+    throw new Error('latestTestResult muss pass oder fail sein.');
+  }
+
+  if (!['months', 'years'].includes(scale)) {
+    throw new Error('latestTestScale muss months oder years sein.');
+  }
+
+  if (nextTestPeriod < 1) {
+    throw new Error('latestTestNextPeriod muss eine positive Zahl sein.');
+  }
+
+  return {
+    tester,
+    lastTest: lastTestDate,
+    lastTestResult,
+    nextTestPeriod,
+    scale
+  };
+}
+
 async function ensureDepreciationId(body) {
   const directId = toInt(body.depreciationId);
   if (directId) return directId;
@@ -277,67 +323,107 @@ router.post('/devices', requireAuth, requireActivated, requireEditor, async (req
 
   try {
     const depreciationId = await ensureDepreciationId(body);
+    const electronicTest = normalizeElectronicTestPayload(body);
+    const client = await pool.connect();
 
-    const { rows } = await pool.query(
-      `
-      INSERT INTO devices (
-        "inventoryNumber", name, "categoryId", "statusId",
-        purchase, price, supplier, "depreciationId", "accountingType",
-        "assignedToUserId",
-        "locationId", "networkEnvironmentId",
-        manufacturer, model, "serialNumber",
-        "patchPanelLabel", "ipAddress", "macAddresses",
-        "leaseDurationMonths", "contractType",
-        notes,
-        "createdBy", "createdAt", "lastEditBy", "lastEditAt"
-      )
-      VALUES (
-        $1,$2,$3,$4,
-        $5,$6,$7,$8,$9,
-        $10,
-        $11,$12,
-        $13,$14,$15,
-        $16,$17,$18,
-        $19,$20,
-        $21,
-        $22,NOW(),$23,NOW()
-      )
-      RETURNING *
-      `,
-      [
-        generatedInventoryNumber,
-        String(body.name).trim(),
-        toInt(body.categoryId),
-        toInt(body.statusId),
-        purchaseDate,
-        body.price ?? null,
-        body.supplier ?? null,
-        depreciationId,
-        body.accountingType ?? 'konsumtiv',
-        toInt(body.assignedToUserId),
-        toInt(body.locationId),
-        toInt(body.networkEnvironmentId),
-        body.manufacturer ?? null,
-        body.model ?? null,
-        body.serialNumber ?? null,
-        body.patchPanelLabel ?? null,
-        body.ipAddress ?? null,
-        macs === undefined ? null : macs,
-        toInt(body.leaseDurationMonths),
-        body.contractType ?? null,
-        body.notes ?? null,
-        req.user.id,
-        req.user.id,
-      ]
-    );
+    try {
+      await client.query('BEGIN');
 
-    return res.status(201).json({ device: rows[0] });
+      const { rows } = await client.query(
+        `
+        INSERT INTO devices (
+          "inventoryNumber", name, "categoryId", "statusId",
+          purchase, price, supplier, "depreciationId", "accountingType",
+          "assignedToUserId",
+          "locationId", "networkEnvironmentId",
+          manufacturer, model, "serialNumber",
+          "patchPanelLabel", "ipAddress", "macAddresses",
+          "leaseDurationMonths", "contractType",
+          notes,
+          "createdBy", "createdAt", "lastEditBy", "lastEditAt"
+        )
+        VALUES (
+          $1,$2,$3,$4,
+          $5,$6,$7,$8,$9,
+          $10,
+          $11,$12,
+          $13,$14,$15,
+          $16,$17,$18,
+          $19,$20,
+          $21,
+          $22,NOW(),$23,NOW()
+        )
+        RETURNING *
+        `,
+        [
+          generatedInventoryNumber,
+          String(body.name).trim(),
+          toInt(body.categoryId),
+          toInt(body.statusId),
+          purchaseDate,
+          body.price ?? null,
+          body.supplier ?? null,
+          depreciationId,
+          body.accountingType ?? 'konsumtiv',
+          toInt(body.assignedToUserId),
+          toInt(body.locationId),
+          toInt(body.networkEnvironmentId),
+          body.manufacturer ?? null,
+          body.model ?? null,
+          body.serialNumber ?? null,
+          body.patchPanelLabel ?? null,
+          body.ipAddress ?? null,
+          macs === undefined ? null : macs,
+          toInt(body.leaseDurationMonths),
+          body.contractType ?? null,
+          body.notes ?? null,
+          req.user.id,
+          req.user.id,
+        ]
+      );
+
+      if (electronicTest) {
+        await client.query(
+          `
+          INSERT INTO electronic_tests (
+            "deviceId", tester, "lastTest", "lastTestResult", "nextTestPeriod", scale,
+            "createdBy", "createdAt", "lastEditBy", "lastEditAt"
+          ) VALUES (
+            $1,$2,$3,$4,$5,$6,
+            $7,NOW(),$8,NOW()
+          )
+          `,
+          [
+            rows[0].id,
+            electronicTest.tester,
+            electronicTest.lastTest,
+            electronicTest.lastTestResult,
+            electronicTest.nextTestPeriod,
+            electronicTest.scale,
+            req.user.id,
+            req.user.id,
+          ]
+        );
+      }
+
+      await client.query('COMMIT');
+      return res.status(201).json({ device: rows[0] });
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   } catch (error) {
     console.error('[DB ERROR] POST /devices', error);
     if (error.code === '23505') {
       return res.status(409).json({ error: 'Generierte Inventarnummer existiert bereits. Bitte erneut versuchen.' });
     }
-    if (String(error.message || '').includes('depreciationTime')) {
+    if (
+      String(error.message || '').includes('depreciationTime')
+      || String(error.message || '').includes('latestTest')
+      || String(error.message || '').includes('Geräteprüfung')
+    ) {
       return res.status(400).json({ error: String(error.message) });
     }
     return res.status(500).json({ error: 'Geraet konnte nicht gespeichert werden.' });
@@ -425,6 +511,41 @@ router.patch('/devices/:id', requireAuth, requireActivated, requireEditor, async
   } catch (error) {
     console.error('[DB ERROR] PATCH /devices/:id', error);
     return res.status(500).json({ error: 'Geraet konnte nicht aktualisiert werden.' });
+  }
+});
+
+router.delete('/devices/:id', requireAuth, requireActivated, requireEditor, async (req, res) => {
+  const id = toInt(req.params.id);
+  if (!id) return res.status(400).json({ error: 'Ungueltige Geraete-ID.' });
+
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    await client.query(
+      'DELETE FROM electronic_tests WHERE "deviceId" = $1',
+      [id]
+    );
+
+    const { rowCount } = await client.query(
+      'DELETE FROM devices WHERE id = $1',
+      [id]
+    );
+
+    if (rowCount === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Geraet nicht gefunden.' });
+    }
+
+    await client.query('COMMIT');
+    return res.json({ deleted: true });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('[DB ERROR] DELETE /devices/:id', error);
+    return res.status(500).json({ error: 'Geraet konnte nicht geloescht werden.' });
+  } finally {
+    client.release();
   }
 });
 

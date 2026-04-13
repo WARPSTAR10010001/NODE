@@ -78,6 +78,11 @@ export interface CreateDevicePayload {
   leaseDurationMonths?: number | null;
   contractType?: 'purchase' | 'pay-per-page' | 'lease' | null | string;
   notes?: string | null;
+  latestTestTester?: string | null;
+  latestTestLastTest?: string | null;
+  latestTestResult?: 'pass' | 'fail' | null | string;
+  latestTestNextPeriod?: number | null;
+  latestTestScale?: 'months' | 'years' | null | string;
 }
 
 @Injectable({

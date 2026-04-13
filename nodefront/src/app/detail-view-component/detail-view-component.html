@@ -1,3 +1,184 @@
-<div class="cc">
-    
+<div class="detail-page">
+  <div class="title">
+    <hr>
+    <h1>Gerätedetails {{ device?.inventoryNumber }}</h1>
+  </div>
+
+  @if (loading) {
+  <section class="form-section state-card">
+    <h2>Lade Gerät...</h2>
+    <p>Die Detailansicht wird vorbereitet.</p>
+  </section>
+  } @else if (!hasDevice) {
+  <section class="form-section state-card">
+    <h2>Gerät nicht gefunden</h2>
+    <p>{{ errorMessage || 'Für die angegebene URL konnte kein Gerät geladen werden.' }}</p>
+    <div class="action-group">
+      <button type="button" (click)="goBack()">Zurück zur Geräteübersicht</button>
+    </div>
+  </section>
+  } @else {
+  <section class="topbar">
+    <div>
+      <label>Name</label>
+      <p class="topbar-value">{{ device!.name }}</p>
+    </div>
+    <div class="action-group">
+      <button type="button" (click)="goBack()">Zurück zur Geräteübersicht</button>
+      @if (canEditDevice) {
+      <button type="button" [routerLink]="['/devices', device!.inventoryNumber, 'edit']">Bearbeiten</button>
+      <button type="button" class="danger" [disabled]="deleting" (click)="deleteDevice()">
+        {{ deleting ? 'Lösche...' : 'Löschen' }}
+      </button>
+      }
+    </div>
+  </section>
+
+  <section class="form-section">
+    <h1>Systemdaten</h1>
+    <div class="field-grid">
+      <div class="form-field">
+        <label>Erstellt am</label>
+        <p>{{ formatDate(device!.createdAt) }}</p>
+      </div>
+      <div class="form-field">
+        <label>Zuletzt geändert</label>
+        <p>{{ formatDate(device!.lastEditAt) }}</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="form-section">
+    <h1>Gerät</h1>
+    <div class="field-grid">
+      <div class="form-field">
+        <label>Name</label>
+        <p>{{ device!.name || '-' }}</p>
+      </div>
+      <div class="form-field">
+        <label>Kategorie</label>
+        <p>{{ device!.categoryName || '-' }}</p>
+      </div>
+      <div class="form-field">
+        <label>Status</label>
+        <p>{{ device!.statusName || '-' }}</p>
+      </div>
+      <div class="form-field">
+        <label>Zugewiesen an</label>
+        <p>{{ formatAssignedUser() }}</p>
+      </div>
+      <div class="form-field">
+        <label>Hersteller</label>
+        <p>{{ device!.manufacturer || '-' }}</p>
+      </div>
+      <div class="form-field">
+        <label>Modell</label>
+        <p>{{ device!.model || '-' }}</p>
+      </div>
+      <div class="form-field">
+        <label>Seriennummer</label>
+        <p>{{ device!.serialNumber || '-' }}</p>
+      </div>
+      <div class="form-field">
+        <label>Standort</label>
+        <p>{{ formatLocation() }}</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="form-section">
+    <h1>Beschaffung</h1>
+    <div class="field-grid">
+      <div class="form-field">
+        <label>Kaufdatum</label>
+        <p>{{ formatDate(device!.purchase) }}</p>
+      </div>
+      <div class="form-field">
+        <label>Preis</label>
+        <p>{{ formatPrice(device!.price) }}</p>
+      </div>
+      <div class="form-field">
+        <label>Lieferant</label>
+        <p>{{ device!.supplier || '-' }}</p>
+      </div>
+      <div class="form-field">
+        <label>Buchungstyp</label>
+        <p>{{ formatAccountingType() }}</p>
+      </div>
+      <div class="form-field">
+        <label>Abschreibung</label>
+        <p>{{ formatDepreciation() }}</p>
+      </div>
+      <div class="form-field">
+        <label>Abschreibungsende</label>
+        <p>{{ formatDate(device!.depreciationEnd) }}</p>
+      </div>
+      <div class="form-field">
+        <label>Vertragsart</label>
+        <p>{{ formatContractType() }}</p>
+      </div>
+      <div class="form-field">
+        <label>Laufzeit Monate</label>
+        <p>{{ device!.leaseDurationMonths ?? '-' }}</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="form-section">
+    <h1>Netzwerk</h1>
+    <div class="field-grid">
+      <div class="form-field">
+        <label>Netzwerkumgebung</label>
+        <p>{{ device!.networkEnvironmentName || '-' }}</p>
+      </div>
+      <div class="form-field">
+        <label>IP-Adresse</label>
+        <p>{{ device!.ipAddress || '-' }}</p>
+      </div>
+      <div class="form-field">
+        <label>Patchpanel / Port</label>
+        <p>{{ device!.patchPanelLabel || '-' }}</p>
+      </div>
+      <div class="form-field full-width">
+        <label>MAC-Adressen</label>
+        <p>{{ formatMacAddresses() }}</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="form-section">
+    <h1>Prüfung</h1>
+    <div class="field-grid">
+      <div class="form-field">
+        <label>Letzter Tester</label>
+        <p>{{ device!.latestTestTester || '-' }}</p>
+      </div>
+      <div class="form-field">
+        <label>Letzter Test</label>
+        <p>{{ formatDate(device!.latestTestLastTest) }}</p>
+      </div>
+      <div class="form-field">
+        <label>Letztes Testergebnis</label>
+        <p>{{ formatLatestTestResult() }}</p>
+      </div>
+      <div class="form-field">
+        <label>Testintervall</label>
+        <p>{{ formatTestInterval() }}</p>
+      </div>
+      <div class="form-field">
+        <label>Nächster Test</label>
+        <p>{{ formatDate(device!.latestTestNextAt) }}</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="form-section">
+    <h1>Notizen</h1>
+    <div class="field-grid single-column">
+      <div class="form-field full-width">
+        <p class="notes">{{ device!.notes || '-' }}</p>
+      </div>
+    </div>
+  </section>
+  }
 </div>
