@@ -50,6 +50,26 @@ export interface Device {
   latestTestNextPeriod?: number;
   latestTestScale?: string;
   latestTestNextAt?: string;
+  currentRevision?: number;
+}
+
+export interface DeviceLogChange {
+  field: string;
+  label: string;
+  before: string | number | null;
+  after: string | number | null;
+}
+
+export interface DeviceLogEntry {
+  id: number;
+  deviceId: number;
+  inventoryNumber: string;
+  version: number;
+  section: string;
+  changes: DeviceLogChange[];
+  changedBy?: number;
+  changedByUsername?: string;
+  changedAt: string;
 }
 
 export interface DeviceListResponse {
@@ -127,6 +147,10 @@ export class DeviceService {
 
   get(id: number): Observable<{ device: Device }> {
     return this.http.get<{ device: Device }>(`${this.base}/devices/${id}`);
+  }
+
+  getLogs(inventoryNumber: string): Observable<{ items: DeviceLogEntry[] }> {
+    return this.http.get<{ items: DeviceLogEntry[] }>(`${this.base}/devices/${encodeURIComponent(inventoryNumber)}/logs`);
   }
 
   create(device: CreateDevicePayload): Observable<{ device: Device }> {

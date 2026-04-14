@@ -53,24 +53,16 @@
   align-items: center;
 }
 
-.form-actions,
 .action-group {
   display: flex;
   justify-content: space-between;
   gap: 12px;
-}
-
-.action-group {
   align-items: center;
   flex-wrap: wrap;
 }
 
 .full-width {
   grid-column: 1 / -1;
-}
-
-.notes {
-  white-space: pre-wrap;
 }
 
 .log-list {
@@ -113,10 +105,7 @@
     align-items: stretch;
   }
 
-  .field-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
+  .field-grid,
   .log-entry-header,
   .log-change-list {
     grid-template-columns: minmax(0, 1fr);

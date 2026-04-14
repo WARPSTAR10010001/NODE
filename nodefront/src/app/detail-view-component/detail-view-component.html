@@ -26,6 +26,7 @@
     <div class="action-group">
       <button type="button" (click)="goBack()">Zurück zur Geräteübersicht</button>
       @if (canEditDevice) {
+      <button type="button" [routerLink]="['/devices', device!.inventoryNumber, 'logs']">Änderungsprotokoll</button>
       <button type="button" [routerLink]="['/devices', device!.inventoryNumber, 'edit']">Bearbeiten</button>
       <button type="button" class="danger" [disabled]="deleting" (click)="deleteDevice()">
         {{ deleting ? 'Lösche...' : 'Löschen' }}
@@ -38,20 +39,16 @@
     <h1>Systemdaten</h1>
     <div class="field-grid">
       <div class="form-field">
-        <label>Erstellt am</label>
-        <p>{{ formatDate(device!.createdAt) }}</p>
+        <label>Angelegt</label>
+        <p>{{ formatAuditLine(device!.createdByUsername, device!.createdAt) }}</p>
       </div>
       <div class="form-field">
-        <label>Angelegt von</label>
-        <p>{{ formatCreatedBy() }}</p>
+        <label>Zuletzt bearbeitet</label>
+        <p>{{ formatAuditLine(device!.lastEditByUsername, device!.lastEditAt) }}</p>
       </div>
       <div class="form-field">
-        <label>Zuletzt geändert</label>
-        <p>{{ formatDate(device!.lastEditAt) }}</p>
-      </div>
-      <div class="form-field">
-        <label>Zuletzt bearbeitet von</label>
-        <p>{{ formatLastEditedBy() }}</p>
+        <label>Aktuelle Version</label>
+        <p>Version {{ currentRevision }}</p>
       </div>
     </div>
   </section>

@@ -1,0 +1,83 @@
+<div class="detail-page">
+  <div class="title">
+    <hr>
+    <h1>Änderungsprotokoll {{ device?.inventoryNumber }}</h1>
+  </div>
+
+  @if (loading) {
+  <section class="form-section state-card">
+    <h2>Lade Änderungsprotokoll...</h2>
+    <p>Die Einträge werden vorbereitet.</p>
+  </section>
+  } @else if (!hasDevice) {
+  <section class="form-section state-card">
+    <h2>Gerät nicht gefunden</h2>
+    <p>{{ errorMessage || 'Für die angegebene URL konnte kein Gerät geladen werden.' }}</p>
+    <div class="action-group">
+      <button type="button" (click)="goBackToOverview()">Zurück zur Geräteübersicht</button>
+    </div>
+  </section>
+  } @else {
+  <section class="topbar">
+    <div>
+      <label>Gerät</label>
+      <p class="topbar-value">{{ device!.name }}</p>
+    </div>
+    <div class="action-group">
+      <button type="button" (click)="goBackToOverview()">Zurück zur Geräteübersicht</button>
+      <button type="button" (click)="goBackToDevice()">Zurück zu den Gerätedetails</button>
+    </div>
+  </section>
+
+  <section class="form-section">
+    <h1>Systemdaten</h1>
+    <div class="field-grid">
+      <div class="form-field">
+        <label>Inventarnummer</label>
+        <p>{{ device!.inventoryNumber }}</p>
+      </div>
+      <div class="form-field">
+        <label>Aktuelle Version</label>
+        <p>Version {{ device!.currentRevision ?? 1 }}</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="form-section">
+    <h1>Änderungen</h1>
+    @if (!logs.length) {
+    <div class="field-grid single-column">
+      <div class="form-field full-width">
+        <p>Noch keine protokollierten Änderungen vorhanden.</p>
+      </div>
+    </div>
+    } @else {
+    <div class="log-list">
+      @for (entry of logs; track entry.id) {
+      <article class="log-entry">
+        <div class="log-entry-header">
+          <div class="form-field">
+            <label>Version</label>
+            <p>Version {{ entry.version }}</p>
+          </div>
+          <div class="form-field">
+            <label>Bearbeitet</label>
+            <p>{{ formatLogAuditLine(entry.changedByUsername, entry.changedAt) }}</p>
+          </div>
+        </div>
+
+        <div class="log-change-list">
+          @for (change of entry.changes; track change.field + '-' + change.label) {
+          <div class="log-change">
+            <label>{{ change.label }}</label>
+            <p>{{ formatChangeValue(change.field, change.before) }} ➤ {{ formatChangeValue(change.field, change.after) }}</p>
+          </div>
+          }
+        </div>
+      </article>
+      }
+    </div>
+    }
+  </section>
+  }
+</div>

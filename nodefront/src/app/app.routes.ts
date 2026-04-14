@@ -15,6 +15,7 @@ import { DetailEditComponent } from './detail-edit-component/detail-edit-compone
 import { authGuard } from './auth-guard';
 import { activatedGuard } from './activated-guard';
 import { minRoleGuard } from './role-guard';
+import { DetailLogsComponent } from './detail-logs-component/detail-logs-component';
 
 export const routes: Routes = [
   {
@@ -59,6 +60,12 @@ export const routes: Routes = [
         title: 'Bearbeiten • NODE'
       },
       {
+        path: 'devices/:inventoryNumber/logs',
+        component: DetailLogsComponent,
+        canActivate: [minRoleGuard(1)],
+        title: 'Logs • NODE'
+      },
+      {
         path: 'dashboard',
         component: DashboardComponent,
         title: 'Dashboard • NODE'
@@ -74,12 +81,6 @@ export const routes: Routes = [
         canActivate: [minRoleGuard(1)],
         component: CreateComponent,
         title: 'Erstellen • NODE'
-      },
-      {
-        path: 'manage/:type',
-        canActivate: [minRoleGuard(1)],
-        component: ManageComponent,
-        title: 'Verwalten • NODE'
       },
       {
         path: 'manage',

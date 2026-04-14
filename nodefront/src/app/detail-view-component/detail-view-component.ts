@@ -74,7 +74,9 @@ export class DetailViewComponent implements OnInit, OnDestroy {
             users: this.userService.getUsers()
           });
         }),
-        switchMap(({ deviceResponse, users }) => this.enrichDeviceUsers(this.hydrateDeviceUsers(deviceResponse.device, users)))
+        switchMap(({ deviceResponse, users }) =>
+          this.enrichDeviceUsers(this.hydrateDeviceUsers(deviceResponse.device, users))
+        )
       )
       .subscribe({
         next: (device) => {
@@ -104,6 +106,10 @@ export class DetailViewComponent implements OnInit, OnDestroy {
     return this.device !== null;
   }
 
+  get currentRevision(): number {
+    return this.device?.currentRevision ?? 1;
+  }
+
   formatDate(value?: string): string {
     if (!value) return '-';
     const date = new Date(value);
@@ -125,6 +131,16 @@ export class DetailViewComponent implements OnInit, OnDestroy {
 
   formatLastEditedBy(): string {
     return this.formatUserLabel(this.device?.lastEditByUsername);
+  }
+
+  formatAuditLine(username?: string, date?: string): string {
+    const userLabel = this.formatUserLabel(username);
+    const dateLabel = this.formatDate(date);
+
+    if (userLabel === '-' && dateLabel === '-') return '-';
+    if (userLabel === '-') return dateLabel;
+    if (dateLabel === '-') return userLabel;
+    return `${userLabel} • ${dateLabel}`;
   }
 
   formatLocation(): string {
@@ -195,7 +211,7 @@ export class DetailViewComponent implements OnInit, OnDestroy {
   formatTestInterval(): string {
     if (!this.device?.latestTestNextPeriod) return '-';
 
-    const scale = this.device.latestTestScale === 'years' ? 'Jahre' : 'Monate';
+    const scale = this.device.latestTestScale === 'years' ? 'Jahre' : this.device.latestTestScale === 'months' ? 'Monate' : '-';
     return `${this.device.latestTestNextPeriod} ${scale}`;
   }
 
@@ -264,7 +280,7 @@ export class DetailViewComponent implements OnInit, OnDestroy {
 
     return forkJoin(
       usernames.map((username) =>
-        this.userService.searchLdap(username).pipe(
+        this.userService.searchLdap(this.toShortUsername(username)).pipe(
           map((results) => ({ username, displayName: this.findExactDisplayName(results, username) }))
         )
       )
@@ -273,7 +289,7 @@ export class DetailViewComponent implements OnInit, OnDestroy {
         this.displayNameMap.clear();
         entries.forEach((entry) => {
           if (entry.displayName) {
-            this.displayNameMap.set(entry.username, entry.displayName);
+            this.displayNameMap.set(this.toShortUsername(entry.username), entry.displayName);
           }
         });
         return device;
@@ -282,7 +298,8 @@ export class DetailViewComponent implements OnInit, OnDestroy {
   }
 
   private findExactDisplayName(results: LdapUser[], username: string): string | null {
-    const exactMatch = results.find((result) => result.username.toLowerCase() === username.toLowerCase());
+    const shortUsername = this.toShortUsername(username);
+    const exactMatch = results.find((result) => this.toShortUsername(result.username) === shortUsername);
     return exactMatch?.displayName?.trim() || null;
   }
 
@@ -293,7 +310,12 @@ export class DetailViewComponent implements OnInit, OnDestroy {
 
   private formatUserLabel(username?: string): string {
     if (!username) return '-';
-    const displayName = this.displayNameMap.get(username);
-    return displayName ? `${displayName} (${username})` : username;
+    const shortUsername = this.toShortUsername(username);
+    const displayName = this.displayNameMap.get(shortUsername);
+    return displayName ? `${displayName} (${shortUsername.toUpperCase()})` : username;
+  }
+
+  private toShortUsername(username?: string): string {
+    return String(username || '').split('@')[0].trim().toLowerCase();
   }
 }

@@ -1,3 +1,3 @@
 cd nodeback
-node server.js
+npx nodemon server.js
 cmd /k

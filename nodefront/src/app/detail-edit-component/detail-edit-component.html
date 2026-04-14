@@ -37,23 +37,19 @@
     </section>
 
     <section class="form-section">
-      <h1>Systemdaten</h1>
+<h1>Systemdaten</h1>
       <div class="field-grid">
         <div class="form-field">
-          <label>Erstellt am</label>
-          <p>{{ device.createdAt }}</p>
+          <label>Angelegt</label>
+          <p>{{ formatAuditLine(device.createdByUsername, device.createdAt) }}</p>
         </div>
         <div class="form-field">
-          <label>Angelegt von</label>
-          <p>{{ formatCreatedBy() }}</p>
+          <label>Zuletzt bearbeitet</label>
+          <p>{{ formatAuditLine(device.lastEditByUsername, device.lastEditAt) }}</p>
         </div>
         <div class="form-field">
-          <label>Zuletzt geändert</label>
-          <p>{{ device.lastEditAt }}</p>
-        </div>
-        <div class="form-field">
-          <label>Zuletzt bearbeitet von</label>
-          <p>{{ formatLastEditedBy() }}</p>
+          <label>Aktuelle Version</label>
+          <p>Version {{ currentRevision }}</p>
         </div>
       </div>
     </section>

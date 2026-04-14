@@ -34,6 +34,187 @@ function normalizeMacArray(value) {
   return undefined;
 }
 
+function normalizeComparableDate(value) {
+  if (value === undefined || value === null || value === '') return null;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? String(value) : parsed.toISOString();
+}
+
+function normalizeUsernameForLog(value) {
+  if (value === undefined || value === null || value === '') return null;
+  return String(value).split('@')[0].trim().toLowerCase();
+}
+
+function normalizeNumberForLog(value) {
+  if (value === undefined || value === null || value === '') return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : String(value);
+}
+
+function normalizeComparableValue(field, value) {
+  if (value === undefined || value === null || value === '') return null;
+
+  if (['purchase', 'latestTestLastTest'].includes(field)) {
+    return normalizeComparableDate(value);
+  }
+
+  if (field === 'macAddresses') {
+    return Array.isArray(value) ? value.map((entry) => String(entry).trim()) : null;
+  }
+
+  if ([
+    'categoryId',
+    'statusId',
+    'assignedToUserId',
+    'locationId',
+    'networkEnvironmentId',
+    'depreciationId'
+  ].includes(field)) {
+    return normalizeNumberForLog(value);
+  }
+
+  if (field === 'assignedToUserId' || field === 'createdBy' || field === 'lastEditBy') {
+    return normalizeUsernameForLog(value);
+  }
+
+  if (['price', 'latestTestNextPeriod', 'leaseDurationMonths', 'depreciationId'].includes(field)) {
+    return normalizeNumberForLog(value);
+  }
+
+  return value;
+}
+
+function valuesEqual(field, left, right) {
+  const normalizedLeft = normalizeComparableValue(field, left);
+  const normalizedRight = normalizeComparableValue(field, right);
+
+  return JSON.stringify(normalizedLeft) === JSON.stringify(normalizedRight);
+}
+
+function formatLocationLabel(row) {
+  if (!row) return null;
+  return [row.city, row.address, row.houseNumber, row.room ? `Raum ${row.room}` : null]
+    .filter(Boolean)
+    .join(', ');
+}
+
+function formatAccountingType(value) {
+  if (value === 'investiv') return 'Investiv';
+  if (value === 'konsumtiv') return 'Konsumtiv';
+  return value ?? null;
+}
+
+function formatContractType(value) {
+  if (value === 'purchase') return 'Kauf';
+  if (value === 'lease') return 'Leasing';
+  if (value === 'pay-per-page') return 'Pay per Page';
+  return value ?? null;
+}
+
+function formatTestResult(value) {
+  if (value === 'pass') return 'Bestanden';
+  if (value === 'fail') return 'Nicht bestanden';
+  return value ?? null;
+}
+
+function formatDateForLog(value) {
+  if (!value) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return String(value);
+  return parsed.toISOString();
+}
+
+async function resolveLogDisplayValue(client, field, value) {
+  if (value === undefined || value === null || value === '') return null;
+
+  switch (field) {
+    case 'categoryId': {
+      const { rows } = await client.query('SELECT name FROM categories WHERE id = $1 LIMIT 1', [value]);
+      return rows[0]?.name ?? String(value);
+    }
+    case 'statusId': {
+      const { rows } = await client.query('SELECT name FROM statuses WHERE id = $1 LIMIT 1', [value]);
+      return rows[0]?.name ?? String(value);
+    }
+    case 'assignedToUserId': {
+      const { rows } = await client.query('SELECT username FROM users WHERE id = $1 LIMIT 1', [value]);
+      return normalizeUsernameForLog(rows[0]?.username ?? value);
+    }
+    case 'locationId': {
+      const { rows } = await client.query(
+        'SELECT city, address, "houseNumber", room FROM locations WHERE id = $1 LIMIT 1',
+        [value]
+      );
+      return formatLocationLabel(rows[0]) || String(value);
+    }
+    case 'networkEnvironmentId': {
+      const { rows } = await client.query('SELECT name FROM network_environments WHERE id = $1 LIMIT 1', [value]);
+      return rows[0]?.name ?? String(value);
+    }
+    case 'accountingType':
+      return formatAccountingType(value);
+    case 'contractType':
+      return formatContractType(value);
+    case 'latestTestResult':
+      return formatTestResult(value);
+    case 'latestTestLastTest':
+    case 'purchase':
+      return formatDateForLog(value);
+    case 'price':
+    case 'latestTestNextPeriod':
+    case 'leaseDurationMonths':
+      return normalizeNumberForLog(value);
+    case 'macAddresses':
+      return Array.isArray(value) ? value.join(', ') : String(value);
+    default:
+      return value;
+  }
+}
+
+async function buildLogChanges(client, descriptors) {
+  const entries = [];
+
+  for (const descriptor of descriptors) {
+    const before = await resolveLogDisplayValue(client, descriptor.field, descriptor.before);
+    const after = await resolveLogDisplayValue(client, descriptor.field, descriptor.after);
+
+    if (valuesEqual(descriptor.field, before, after)) {
+      continue;
+    }
+
+    entries.push({
+      field: descriptor.field,
+      label: descriptor.label,
+      before,
+      after
+    });
+  }
+
+  return entries;
+}
+
+async function createDeviceLog(client, { deviceId, inventoryNumber, section, changedBy, changes }) {
+  if (!changes.length) return;
+
+  const versionResult = await client.query(
+    'SELECT COALESCE(MAX(version), 1) + 1 AS version FROM device_logs WHERE "deviceId" = $1',
+    [deviceId]
+  );
+
+  const nextVersion = versionResult.rows[0]?.version ?? 2;
+
+  await client.query(
+    `
+    INSERT INTO device_logs (
+      "deviceId", "inventoryNumber", version, section, changes, "changedBy", "changedAt"
+    ) VALUES (
+      $1, $2, $3, $4, $5::jsonb, $6, NOW()
+    )
+    `,
+    [deviceId, inventoryNumber, nextVersion, section, JSON.stringify(changes), changedBy]
+  );
+}
+
 function normalizeElectronicTestPayload(body) {
   const hasAnyField = [
     'latestTestTester',
@@ -125,6 +306,14 @@ CASE
   WHEN etl.scale = 'years'  THEN etl."lastTest" + (etl."nextTestPeriod" || ' years')::interval
   ELSE NULL
 END
+`;
+
+const currentRevisionSql = `
+COALESCE((
+  SELECT MAX(dl.version)
+  FROM device_logs dl
+  WHERE dl."deviceId" = d.id
+), 1)
 `;
 
 const allowedSort = new Set(['lastEditAt', 'createdAt', 'inventoryNumber', 'name']);
@@ -220,7 +409,8 @@ router.get('/devices', requireAuth, requireActivated, async (req, res) => {
         etl."lastTestResult" AS "latestTestResult",
         etl."nextTestPeriod" AS "latestTestNextPeriod",
         etl.scale AS "latestTestScale",
-        ${nextTestAtSql} AS "latestTestNextAt"
+        ${nextTestAtSql} AS "latestTestNextAt",
+        ${currentRevisionSql} AS "currentRevision"
       FROM devices d
       LEFT JOIN categories c ON c.id = d."categoryId"
       LEFT JOIN statuses s ON s.id = d."statusId"
@@ -280,7 +470,8 @@ router.get('/devices/:id', requireAuth, requireActivated, async (req, res) => {
         etl."lastTestResult" AS "latestTestResult",
         etl."nextTestPeriod" AS "latestTestNextPeriod",
         etl.scale AS "latestTestScale",
-        ${nextTestAtSql} AS "latestTestNextAt"
+        ${nextTestAtSql} AS "latestTestNextAt",
+        ${currentRevisionSql} AS "currentRevision"
       FROM devices d
       LEFT JOIN categories c ON c.id = d."categoryId"
       LEFT JOIN statuses s ON s.id = d."statusId"
@@ -454,67 +645,127 @@ router.patch('/devices/:id', requireAuth, requireActivated, requireEditor, async
   }
 
   const fields = {
-    name: { col: 'name', transform: (value) => (value === null ? null : String(value).trim()) },
-    categoryId: { col: '"categoryId"', transform: (value) => (value === null ? null : toInt(value)) },
-    statusId: { col: '"statusId"', transform: (value) => (value === null ? null : toInt(value)) },
+    name: {
+      col: 'name',
+      label: 'Name',
+      transform: (value) => (value === null ? null : String(value).trim())
+    },
+    categoryId: {
+      col: '"categoryId"',
+      label: 'Kategorie',
+      transform: (value) => (value === null ? null : toInt(value))
+    },
+    statusId: {
+      col: '"statusId"',
+      label: 'Status',
+      transform: (value) => (value === null ? null : toInt(value))
+    },
     purchase: {
       col: 'purchase',
+      label: 'Kaufdatum',
       transform: (value) => {
         const date = toDate(value);
         if (date === undefined) throw new Error('purchase muss ein gueltiges Datum sein.');
         return date;
       }
     },
-    price: { col: 'price', transform: (value) => (value === null ? null : value) },
-    supplier: { col: 'supplier', transform: (value) => (value === null ? null : String(value)) },
-    depreciationId: { col: '"depreciationId"', transform: () => derivedDepreciationId ?? null },
-    accountingType: { col: '"accountingType"', transform: (value) => value },
-    assignedToUserId: { col: '"assignedToUserId"', transform: (value) => (value === null ? null : toInt(value)) },
-    locationId: { col: '"locationId"', transform: (value) => (value === null ? null : toInt(value)) },
-    networkEnvironmentId: { col: '"networkEnvironmentId"', transform: (value) => (value === null ? null : toInt(value)) },
-    manufacturer: { col: 'manufacturer', transform: (value) => (value === null ? null : String(value)) },
-    model: { col: 'model', transform: (value) => (value === null ? null : String(value)) },
-    serialNumber: { col: '"serialNumber"', transform: (value) => (value === null ? null : String(value)) },
-    patchPanelLabel: { col: '"patchPanelLabel"', transform: (value) => (value === null ? null : String(value)) },
-    ipAddress: { col: '"ipAddress"', transform: (value) => value },
+    price: { col: 'price', label: 'Preis', transform: (value) => (value === null ? null : value) },
+    supplier: { col: 'supplier', label: 'Lieferant', transform: (value) => (value === null ? null : String(value)) },
+    depreciationId: {
+      col: '"depreciationId"',
+      label: 'Abschreibung',
+      transform: () => derivedDepreciationId ?? null
+    },
+    accountingType: { col: '"accountingType"', label: 'Buchungstyp', transform: (value) => value },
+    assignedToUserId: {
+      col: '"assignedToUserId"',
+      label: 'Zugewiesen an',
+      transform: (value) => (value === null ? null : toInt(value))
+    },
+    locationId: {
+      col: '"locationId"',
+      label: 'Standort',
+      transform: (value) => (value === null ? null : toInt(value))
+    },
+    networkEnvironmentId: {
+      col: '"networkEnvironmentId"',
+      label: 'Netzwerkumgebung',
+      transform: (value) => (value === null ? null : toInt(value))
+    },
+    manufacturer: { col: 'manufacturer', label: 'Hersteller', transform: (value) => (value === null ? null : String(value)) },
+    model: { col: 'model', label: 'Modell', transform: (value) => (value === null ? null : String(value)) },
+    serialNumber: {
+      col: '"serialNumber"',
+      label: 'Seriennummer',
+      transform: (value) => (value === null ? null : String(value))
+    },
+    patchPanelLabel: {
+      col: '"patchPanelLabel"',
+      label: 'Patchpanel / Port',
+      transform: (value) => (value === null ? null : String(value))
+    },
+    ipAddress: { col: '"ipAddress"', label: 'IP-Adresse', transform: (value) => value },
     macAddresses: {
       col: '"macAddresses"',
+      label: 'MAC-Adressen',
       transform: (value) => {
         const macs = normalizeMacArray(value);
         if (macs === undefined) throw new Error('macAddresses muss ein Array oder null sein.');
         return macs;
       }
     },
-    leaseDurationMonths: { col: '"leaseDurationMonths"', transform: (value) => (value === null ? null : toInt(value)) },
-    contractType: { col: '"contractType"', transform: (value) => value },
-    notes: { col: 'notes', transform: (value) => (value === null ? null : String(value)) },
+    leaseDurationMonths: {
+      col: '"leaseDurationMonths"',
+      label: 'Laufzeit Monate',
+      transform: (value) => (value === null ? null : toInt(value))
+    },
+    contractType: { col: '"contractType"', label: 'Vertragsart', transform: (value) => value },
+    notes: { col: 'notes', label: 'Notizen', transform: (value) => (value === null ? null : String(value)) },
   };
 
   const sets = [];
   const params = [id];
+  const changedDescriptors = [];
+  const client = await pool.connect();
 
   try {
+    await client.query('BEGIN');
+
+    const existingResult = await client.query('SELECT * FROM devices WHERE id = $1 LIMIT 1', [id]);
+    if (existingResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Geraet nicht gefunden.' });
+    }
+
+    const existingDevice = existingResult.rows[0];
+
     for (const key of Object.keys(fields)) {
       if (!hasOwn(body, key)) continue;
       const spec = fields[key];
       const value = spec.transform(body[key]);
+      if (valuesEqual(key, existingDevice[key], value)) {
+        continue;
+      }
       params.push(value);
       sets.push(`${spec.col} = $${params.length}`);
+      changedDescriptors.push({
+        field: key,
+        label: spec.label,
+        before: existingDevice[key],
+        after: value
+      });
     }
-  } catch (error) {
-    return res.status(400).json({ error: String(error.message || error) });
-  }
 
-  if (sets.length === 0) {
-    return res.status(400).json({ error: 'Keine Felder zum Aktualisieren uebergeben.' });
-  }
+    if (sets.length === 0) {
+      await client.query('COMMIT');
+      return res.json({ device: existingDevice, changed: false });
+    }
 
-  params.push(req.user.id);
-  sets.push(`"lastEditBy" = $${params.length}`);
-  sets.push(`"lastEditAt" = NOW()`);
+    params.push(req.user.id);
+    sets.push(`"lastEditBy" = $${params.length}`);
+    sets.push(`"lastEditAt" = NOW()`);
 
-  try {
-    const { rows } = await pool.query(
+    const { rows } = await client.query(
       `
       UPDATE devices
       SET ${sets.join(', ')}
@@ -524,11 +775,23 @@ router.patch('/devices/:id', requireAuth, requireActivated, requireEditor, async
       params
     );
 
-    if (rows.length === 0) return res.status(404).json({ error: 'Geraet nicht gefunden.' });
-    return res.json({ device: rows[0] });
+    const logChanges = await buildLogChanges(client, changedDescriptors);
+    await createDeviceLog(client, {
+      deviceId: id,
+      inventoryNumber: rows[0].inventoryNumber,
+      section: 'Gerät',
+      changedBy: req.user.id,
+      changes: logChanges
+    });
+
+    await client.query('COMMIT');
+    return res.json({ device: rows[0], changed: true });
   } catch (error) {
+    await client.query('ROLLBACK');
     console.error('[DB ERROR] PATCH /devices/:id', error);
     return res.status(500).json({ error: 'Geraet konnte nicht aktualisiert werden.' });
+  } finally {
+    client.release();
   }
 });
 
@@ -595,6 +858,34 @@ router.get('/devices/:id/electronic-tests', requireAuth, requireActivated, async
   }
 });
 
+router.get('/devices/:inventoryNumber/logs', requireAuth, requireActivated, async (req, res) => {
+  const inventoryNumber = String(req.params.inventoryNumber || '').trim();
+
+  if (!inventoryNumber) {
+    return res.status(400).json({ error: 'Ungueltige Inventarnummer.' });
+  }
+
+  try {
+    const { rows } = await pool.query(
+      `
+      SELECT
+        dl.*,
+        u.username AS "changedByUsername"
+      FROM device_logs dl
+      LEFT JOIN users u ON u.id = dl."changedBy"
+      WHERE dl."inventoryNumber" = $1
+      ORDER BY dl.version DESC, dl."changedAt" DESC, dl.id DESC
+      `,
+      [inventoryNumber]
+    );
+
+    return res.json({ items: rows });
+  } catch (error) {
+    console.error('[DB ERROR] GET /devices/:inventoryNumber/logs', error);
+    return res.status(500).json({ error: 'Aenderungsprotokoll konnte nicht geladen werden.' });
+  }
+});
+
 router.post('/devices/:id/electronic-tests', requireAuth, requireActivated, requireEditor, async (req, res) => {
   const deviceId = toInt(req.params.id);
   if (!deviceId) return res.status(400).json({ error: 'Ungueltige Geraete-ID.' });
@@ -623,8 +914,22 @@ router.post('/devices/:id/electronic-tests', requireAuth, requireActivated, requ
     return res.status(400).json({ error: 'lastTest muss ein gueltiges Datum sein.' });
   }
 
+  const client = await pool.connect();
+
   try {
-    const { rows } = await pool.query(
+    await client.query('BEGIN');
+
+    const deviceResult = await client.query(
+      'SELECT id, "inventoryNumber" FROM devices WHERE id = $1 LIMIT 1',
+      [deviceId]
+    );
+
+    if (deviceResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Geraet nicht gefunden.' });
+    }
+
+    const { rows } = await client.query(
       `
       INSERT INTO electronic_tests (
         "deviceId", tester, "lastTest", "lastTestResult", "nextTestPeriod", scale,
@@ -647,10 +952,35 @@ router.post('/devices/:id/electronic-tests', requireAuth, requireActivated, requ
       ]
     );
 
+    await client.query(
+      'UPDATE devices SET "lastEditBy" = $2, "lastEditAt" = NOW() WHERE id = $1',
+      [deviceId, req.user.id]
+    );
+
+    const logChanges = await buildLogChanges(client, [
+      { field: 'latestTestTester', label: 'Letzter Tester', before: null, after: rows[0].tester },
+      { field: 'latestTestLastTest', label: 'Letzter Test', before: null, after: rows[0].lastTest },
+      { field: 'latestTestResult', label: 'Letztes Testergebnis', before: null, after: rows[0].lastTestResult },
+      { field: 'latestTestNextPeriod', label: 'Testintervall', before: null, after: rows[0].nextTestPeriod },
+      { field: 'latestTestScale', label: 'Intervall-Einheit', before: null, after: rows[0].scale }
+    ]);
+
+    await createDeviceLog(client, {
+      deviceId,
+      inventoryNumber: deviceResult.rows[0].inventoryNumber,
+      section: 'Prüfung',
+      changedBy: req.user.id,
+      changes: logChanges
+    });
+
+    await client.query('COMMIT');
     return res.status(201).json({ electronicTest: rows[0] });
   } catch (error) {
+    await client.query('ROLLBACK');
     console.error('[DB ERROR] POST /devices/:id/electronic-tests', error);
     return res.status(500).json({ error: 'Pruefung konnte nicht gespeichert werden.' });
+  } finally {
+    client.release();
   }
 });
 
@@ -661,23 +991,67 @@ router.patch('/electronic-tests/:testId', requireAuth, requireActivated, require
   const body = req.body || {};
   const sets = [];
   const params = [testId];
+  const changedDescriptors = [];
+  const client = await pool.connect();
 
   const allowed = {
-    tester: { col: 'tester', transform: (value) => (value === null ? null : String(value)) },
+    tester: {
+      col: 'tester',
+      field: 'latestTestTester',
+      label: 'Letzter Tester',
+      transform: (value) => (value === null ? null : String(value))
+    },
     lastTest: {
       col: '"lastTest"',
+      field: 'latestTestLastTest',
+      label: 'Letzter Test',
       transform: (value) => {
         const date = toDate(value);
         if (date === undefined) throw new Error('lastTest muss ein gueltiges Datum sein.');
         return date;
       }
     },
-    lastTestResult: { col: '"lastTestResult"', transform: (value) => value },
-    nextTestPeriod: { col: '"nextTestPeriod"', transform: (value) => (value === null ? null : toInt(value)) },
-    scale: { col: 'scale', transform: (value) => value },
+    lastTestResult: {
+      col: '"lastTestResult"',
+      field: 'latestTestResult',
+      label: 'Letztes Testergebnis',
+      transform: (value) => value
+    },
+    nextTestPeriod: {
+      col: '"nextTestPeriod"',
+      field: 'latestTestNextPeriod',
+      label: 'Testintervall',
+      transform: (value) => (value === null ? null : toInt(value))
+    },
+    scale: {
+      col: 'scale',
+      field: 'latestTestScale',
+      label: 'Intervall-Einheit',
+      transform: (value) => value
+    },
   };
 
   try {
+    await client.query('BEGIN');
+
+    const existingResult = await client.query(
+      `
+      SELECT et.*, d."inventoryNumber"
+      FROM electronic_tests et
+      JOIN devices d ON d.id = et."deviceId"
+      WHERE et.id = $1
+      LIMIT 1
+      `,
+      [testId]
+    );
+
+    if (existingResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Pruefung nicht gefunden.' });
+    }
+
+    const existingTest = existingResult.rows[0];
+
     for (const key of Object.keys(allowed)) {
       if (!hasOwn(body, key)) continue;
 
@@ -689,15 +1063,26 @@ router.patch('/electronic-tests/:testId', requireAuth, requireActivated, require
       }
 
       const value = allowed[key].transform(body[key]);
+      if (valuesEqual(allowed[key].field, existingTest[key], value)) {
+        continue;
+      }
       params.push(value);
       sets.push(`${allowed[key].col} = $${params.length}`);
+      changedDescriptors.push({
+        field: allowed[key].field,
+        label: allowed[key].label,
+        before: existingTest[key],
+        after: value
+      });
     }
   } catch (error) {
+    await client.query('ROLLBACK');
     return res.status(400).json({ error: String(error.message || error) });
   }
 
   if (sets.length === 0) {
-    return res.status(400).json({ error: 'Keine Felder zum Aktualisieren uebergeben.' });
+    await client.query('COMMIT');
+    return res.json({ electronicTest: { id: testId }, changed: false });
   }
 
   params.push(req.user.id);
@@ -705,7 +1090,7 @@ router.patch('/electronic-tests/:testId', requireAuth, requireActivated, require
   sets.push(`"lastEditAt" = NOW()`);
 
   try {
-    const { rows } = await pool.query(
+    const { rows } = await client.query(
       `
       UPDATE electronic_tests
       SET ${sets.join(', ')}
@@ -715,11 +1100,28 @@ router.patch('/electronic-tests/:testId', requireAuth, requireActivated, require
       params
     );
 
-    if (rows.length === 0) return res.status(404).json({ error: 'Pruefung nicht gefunden.' });
-    return res.json({ electronicTest: rows[0] });
+    await client.query(
+      'UPDATE devices SET "lastEditBy" = $2, "lastEditAt" = NOW() WHERE id = $1',
+      [existingTest.deviceId, req.user.id]
+    );
+
+    const logChanges = await buildLogChanges(client, changedDescriptors);
+    await createDeviceLog(client, {
+      deviceId: existingTest.deviceId,
+      inventoryNumber: existingTest.inventoryNumber,
+      section: 'Prüfung',
+      changedBy: req.user.id,
+      changes: logChanges
+    });
+
+    await client.query('COMMIT');
+    return res.json({ electronicTest: rows[0], changed: true });
   } catch (error) {
+    await client.query('ROLLBACK');
     console.error('[DB ERROR] PATCH /electronic-tests/:testId', error);
     return res.status(500).json({ error: 'Pruefung konnte nicht aktualisiert werden.' });
+  } finally {
+    client.release();
   }
 });
 

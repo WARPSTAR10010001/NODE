@@ -46,6 +46,10 @@ export class DetailEditComponent implements OnInit, OnDestroy {
 
   private readonly destroy$ = new Subject<void>();
   private readonly assignedSearch$ = new Subject<string>();
+  private readonly dateFormatter = new Intl.DateTimeFormat('de-DE', {
+    dateStyle: 'medium',
+    timeStyle: 'short'
+  });
 
   constructor(
     private route: ActivatedRoute,
@@ -96,6 +100,26 @@ export class DetailEditComponent implements OnInit, OnDestroy {
     return this.formatUserLabel(this.device?.lastEditByUsername);
   }
 
+  formatDate(value?: string): string {
+    if (!value) return '-';
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? '-' : this.dateFormatter.format(date);
+  }
+
+  formatAuditLine(username?: string, date?: string): string {
+    const userLabel = this.formatUserLabel(username);
+    const dateLabel = this.formatDate(date);
+
+    if (userLabel === '-' && dateLabel === '-') return '-';
+    if (userLabel === '-') return dateLabel;
+    if (dateLabel === '-') return userLabel;
+    return `${userLabel} • ${dateLabel}`;
+  }
+
+  get currentRevision(): number {
+    return this.device?.currentRevision ?? 1;
+  }
+
   onAssignedSearchChange(value: string): void {
     this.assignedSearch = value;
 
@@ -119,7 +143,7 @@ export class DetailEditComponent implements OnInit, OnDestroy {
       .subscribe({
         next: ({ user: resolved }) => {
           this.form.get('assignedToUserId')?.setValue(resolved.id);
-          this.assignedSearch = `${user.displayName} (${user.username})`;
+          this.assignedSearch = `${user.displayName} (${this.toShortUsername(user.username).toUpperCase()})`;
           this.ldapResults = [];
           this.ldapLoading = false;
         },
@@ -439,7 +463,7 @@ export class DetailEditComponent implements OnInit, OnDestroy {
 
     return forkJoin(
       usernames.map((username) =>
-        this.userService.searchLdap(username).pipe(
+        this.userService.searchLdap(this.toShortUsername(username)).pipe(
           map((results) => ({ username, displayName: this.findExactDisplayName(results, username) }))
         )
       )
@@ -448,7 +472,7 @@ export class DetailEditComponent implements OnInit, OnDestroy {
         this.displayNameMap.clear();
         entries.forEach((entry) => {
           if (entry.displayName) {
-            this.displayNameMap.set(entry.username, entry.displayName);
+            this.displayNameMap.set(this.toShortUsername(entry.username), entry.displayName);
           }
         });
         return device;
@@ -457,7 +481,8 @@ export class DetailEditComponent implements OnInit, OnDestroy {
   }
 
   private findExactDisplayName(results: LdapUser[], username: string): string | null {
-    const exactMatch = results.find((result) => result.username.toLowerCase() === username.toLowerCase());
+    const shortUsername = this.toShortUsername(username);
+    const exactMatch = results.find((result) => this.toShortUsername(result.username) === shortUsername);
     return exactMatch?.displayName?.trim() || null;
   }
 
@@ -468,8 +493,13 @@ export class DetailEditComponent implements OnInit, OnDestroy {
 
   private formatUserLabel(username?: string): string {
     if (!username) return '-';
-    const displayName = this.displayNameMap.get(username);
-    return displayName ? `${displayName} (${username})` : username;
+    const shortUsername = this.toShortUsername(username);
+    const displayName = this.displayNameMap.get(shortUsername);
+    return displayName ? `${displayName} (${shortUsername.toUpperCase()})` : username;
+  }
+
+  private toShortUsername(username?: string): string {
+    return String(username || '').split('@')[0].trim().toLowerCase();
   }
 
   private buildDevicePayload(): Partial<Device> {
