@@ -17,7 +17,7 @@
         <button type="button" class="danger" (click)="clearSearch()">X</button>
         }
         <button type="button" (click)="openFilterOverlay()">Sortieren & Filtern</button>
-        @if (activeFilterCount > 0) {
+        @if (hasSavedViewState) {
         <button type="button" class="danger" (click)="resetAllFilters()">Zur&uuml;cksetzen</button>
         }
       </div>

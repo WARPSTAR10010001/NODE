@@ -1,9 +1,11 @@
-import { Component, HostListener } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { RouterOutlet, RouterLink, Router } from '@angular/router';
 import { AuthService } from './auth-service';
 import { VersionService } from './version-service';
-import { OverlayService } from './overlay-service';
+import { OverlayAccountPayload, OverlayService } from './overlay-service';
 import { OverlayComponent } from "./overlay-component/overlay-component";
+import { UserService } from './user-service';
+import { Subject, takeUntil } from 'rxjs';
 
 @Component({
   selector: 'app-root',
@@ -11,13 +13,50 @@ import { OverlayComponent } from "./overlay-component/overlay-component";
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
-export class App {
+export class App implements OnInit, OnDestroy {
+  accountDisplayName = '';
+  private readonly destroy$ = new Subject<void>();
+
   constructor(
     public auth: AuthService,
     private router: Router,
     public version: VersionService,
-    private overlay: OverlayService
+    private overlay: OverlayService,
+    private userService: UserService
   ) {}
+
+  ngOnInit(): void {
+    this.auth.user$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((user) => {
+        if (!user?.username) {
+          this.accountDisplayName = '';
+          return;
+        }
+
+        const loginName = this.normalizeLoginName(user.username);
+        this.accountDisplayName = loginName.toUpperCase();
+
+        this.userService.searchLdap(loginName)
+          .pipe(takeUntil(this.destroy$))
+          .subscribe({
+            next: (results) => {
+              const exactMatch = results.find(
+                (entry) => this.normalizeLoginName(entry.username).toLowerCase() === loginName.toLowerCase()
+              );
+              this.accountDisplayName = exactMatch?.displayName?.trim() || loginName.toUpperCase();
+            },
+            error: () => {
+              this.accountDisplayName = loginName.toUpperCase();
+            }
+          });
+      });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
 
   navigateLogin(logout: boolean) {
     if (logout) {
@@ -48,6 +87,28 @@ export class App {
 
   openStyleOverlay() {
     this.overlay.showOverlay("style");
+  }
+
+  openAccountOverlay() {
+    const user = this.auth.user;
+    if (!user) {
+      return;
+    }
+
+    const loginName = this.normalizeLoginName(user.username);
+    const payload: OverlayAccountPayload = {
+      displayName: this.accountDisplayName || loginName.toUpperCase(),
+      username: loginName.toUpperCase(),
+      loginName: user.username,
+      isActivated: user.isActivated,
+      role: user.role
+    };
+
+    this.overlay.showOverlay('account', undefined, payload);
+  }
+
+  private normalizeLoginName(username: string): string {
+    return String(username || '').split('@')[0].trim();
   }
 
   @HostListener("document:keydown.shift.q", ["$event"])

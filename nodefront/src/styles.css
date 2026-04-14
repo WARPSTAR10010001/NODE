@@ -4,6 +4,13 @@
     --white: #ffffff;
     --black: #131313;
     --accent: #0077ff;
+
+    --blueacc: #0077ff;
+    --greenacc: #00bd39;
+    --pinkacc: #ff0a5b;
+    --orangeacc: #ff6c0a;
+    --purpleacc: #9900ff;
+    --cyanacc: #00c9ae;
 }
 
 *::selection {
@@ -30,23 +37,27 @@ body.dark {
 }
 
 body.blue {
-    --accent: #0077ff;
+    --accent: var(--blueacc);
 }
 
 body.green {
-    --accent: #00bd39;
+    --accent: var(--greenacc);
 }
 
 body.pink {
-    --accent: #ff0a5b;
+    --accent: var(--pinkacc);
 }
 
 body.orange {
-    --accent: #ff6c0a;
+    --accent: var(--orangeacc);
 }
 
 body.purple {
-    --accent: #9900ff;
+    --accent: var(--purpleacc);
+}
+
+body.cyan {
+    --accent: var(--cyanacc);
 }
 
 body {

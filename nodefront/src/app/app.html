@@ -12,7 +12,7 @@
                 @if (auth.activated() === true) {
                 <button (click)="navigateDashboard()">Dashboard</button>
                 }
-            <button (click)="navigateLogin(true)">Abmelden</button>
+            <button (click)="openAccountOverlay()">Konto</button>
             } @else {
             <button (click)="navigateLogin(false)">Anmelden</button>
             }
@@ -24,9 +24,9 @@
     </div>
     <div id="footer">
         <div id="footer-link">
-            <a id="version" (click)="navigateChangelog()">{{ this.version.getVersion() }}</a>
-            <a id="style" (click)="openStyleOverlay()">Style</a>
+            <a id="documentation" (click)="navigateDocumentation()">Dokumentation</a>
+            <a id="style" (click)="openStyleOverlay()">Darstellung</a>
         </div>
-        <a id="documentation" (click)="navigateDocumentation()">Dokumentation</a>
+        <a id="version" (click)="navigateChangelog()">NODE Release {{ this.version.getVersion(true) }}</a>
     </div>
 </div>

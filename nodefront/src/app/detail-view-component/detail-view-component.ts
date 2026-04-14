@@ -8,6 +8,8 @@ import { Device, DeviceService } from '../device-service';
 import { OverlayService } from '../overlay-service';
 import { LdapUser, UserRecord, UserService } from '../user-service';
 
+const RECENT_DEVICES_STORAGE_KEY = 'node.dashboard.recentDevices';
+
 @Component({
   selector: 'app-detail-view-component',
   imports: [CommonModule, RouterLink],
@@ -81,6 +83,7 @@ export class DetailViewComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (device) => {
           this.device = device;
+          this.rememberRecentDevice(device);
           this.loading = false;
         },
         error: (error) => {
@@ -89,6 +92,7 @@ export class DetailViewComponent implements OnInit, OnDestroy {
             ? error.message
             : 'Die Detailansicht konnte nicht geladen werden.';
           this.loading = false;
+          this.overlay.showOverlay('error', this.errorMessage);
         }
       });
   }
@@ -317,5 +321,30 @@ export class DetailViewComponent implements OnInit, OnDestroy {
 
   private toShortUsername(username?: string): string {
     return String(username || '').split('@')[0].trim().toLowerCase();
+  }
+
+  private rememberRecentDevice(device: Device): void {
+    if (typeof localStorage === 'undefined') {
+      return;
+    }
+
+    const entry = {
+      inventoryNumber: device.inventoryNumber,
+      name: device.name || device.inventoryNumber,
+      lastViewedAt: this.dateFormatter.format(new Date())
+    };
+
+    try {
+      const rawValue = localStorage.getItem(RECENT_DEVICES_STORAGE_KEY);
+      const parsed = rawValue ? JSON.parse(rawValue) : [];
+      const recentDevices = Array.isArray(parsed) ? parsed : [];
+      const merged = [
+        entry,
+        ...recentDevices.filter((item) => item?.inventoryNumber !== entry.inventoryNumber)
+      ].slice(0, 3);
+
+      localStorage.setItem(RECENT_DEVICES_STORAGE_KEY, JSON.stringify(merged));
+    } catch {
+    }
   }
 }

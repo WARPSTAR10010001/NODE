@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 
 export type Theme = 'light' | 'dark';
-export type Accent = 'blue' | 'green' | 'pink' | 'orange' | 'purple';
+export type Accent = 'blue' | 'green' | 'pink' | 'orange' | 'purple' | 'cyan';
 
 @Injectable({
   providedIn: 'root'
@@ -34,7 +34,7 @@ export class ThemeService {
   }
 
   private sanitizeAccent(raw: string | null) {
-    if (raw === 'blue' || raw === 'green' || raw === 'pink' || raw === 'orange' || raw === 'purple') return raw;
+    if (raw === 'blue' || raw === 'green' || raw === 'pink' || raw === 'orange' || raw === 'purple' || raw == 'cyan') return raw;
     if (raw) localStorage.setItem(this.accentKey, 'blue');
     return 'blue';
   }
@@ -55,7 +55,7 @@ export class ThemeService {
   }
 
   setAccent(accent: Accent, save = true) {
-    document.body.classList.remove('blue', 'green', 'pink', 'orange', 'purple');
+    document.body.classList.remove('blue', 'green', 'pink', 'orange', 'purple', 'cyan');
     document.body.classList.add(accent);
 
     this.currentAccentSubject.next(accent);

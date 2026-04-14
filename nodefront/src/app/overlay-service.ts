@@ -2,12 +2,14 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 
 export type OverlayType =
+  | 'account'
   | 'style'
   | 'error'
   | 'success'
   | 'info'
   | 'filter'
-  | 'debug';
+  | 'debug'
+  | 'update';
 
 export interface OverlayAction {
   label: string;
@@ -41,6 +43,14 @@ export interface OverlayFilterPayload {
   onSortDirectionChange: (value: 'asc' | 'desc') => void;
   onReset: () => void;
   onApply: () => void;
+}
+
+export interface OverlayAccountPayload {
+  displayName: string;
+  username: string;
+  loginName: string;
+  isActivated: boolean;
+  role?: number;
 }
 
 export interface OverlayState {

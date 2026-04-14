@@ -2,9 +2,10 @@ import { Component, HostListener, OnInit, Renderer2 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { OverlayFilterPayload, OverlayService, OverlayState } from '../overlay-service';
+import { OverlayAccountPayload, OverlayFilterPayload, OverlayService, OverlayState } from '../overlay-service';
 import { Accent, Theme, ThemeService } from '../theme-service';
 import { AuthService } from '../auth-service';
+import { VersionService } from '../version-service';
 
 @Component({
   selector: 'app-overlay-component',
@@ -16,13 +17,21 @@ export class OverlayComponent implements OnInit {
   overlayState: OverlayState = { show: false, type: 'info' };
   selectedTheme: Theme = 'light';
   selectedAccent: Accent = 'blue';
+  readonly accentOptions: Array<{ value: Accent; label: string; previewClass: string }> = [
+    { value: 'blue', label: 'Blau', previewClass: 'accent-blue' },
+    { value: 'green', label: 'Grün', previewClass: 'accent-green' },
+    { value: 'pink', label: 'Pink', previewClass: 'accent-pink' },
+    { value: 'orange', label: 'Orange', previewClass: 'accent-orange' },
+    { value: 'purple', label: 'Violett', previewClass: 'accent-purple' }
+  ];
 
   constructor(
     private overlay: OverlayService,
     private theme: ThemeService,
     private renderer: Renderer2,
     private router: Router,
-    private auth: AuthService
+    private auth: AuthService,
+    public version: VersionService
   ) {}
 
   ngOnInit() {
@@ -42,6 +51,16 @@ export class OverlayComponent implements OnInit {
     this.overlay.hideOverlay();
   }
 
+  closeUpdate() {
+    this.close();
+    this.version.acknowledgeCurrentVersion();
+  }
+
+  navigateChangelog() {
+    this.closeUpdate();
+    this.navigate('/changelog');
+  }
+
   navigate(route?: string, queryParams?: Record<string, string>) {
     this.close();
     if (route) {
@@ -57,9 +76,21 @@ export class OverlayComponent implements OnInit {
     return this.overlayState.payload as OverlayFilterPayload;
   }
 
+  get accountPayload(): OverlayAccountPayload | null {
+    if (this.overlayState.type !== 'account' || !this.overlayState.payload) {
+      return null;
+    }
+
+    return this.overlayState.payload as OverlayAccountPayload;
+  }
+
   get generalFilterFields() {
     return (this.filterPayload?.fields || []).filter((field) =>
       ![
+        'latestTestTester',
+        'latestTestResult',
+        'latestTestScale',
+        'latestTestNextPeriod',
         'createdFrom',
         'createdTo',
         'updatedFrom',
@@ -86,7 +117,16 @@ export class OverlayComponent implements OnInit {
 
   get technicalReviewFields() {
     return (this.filterPayload?.fields || []).filter((field) =>
-      ['latestTestLastFrom', 'latestTestLastTo', 'latestTestNextFrom', 'latestTestNextTo'].includes(field.key)
+      [
+        'latestTestTester',
+        'latestTestResult',
+        'latestTestScale',
+        'latestTestNextPeriod',
+        'latestTestLastFrom',
+        'latestTestLastTo',
+        'latestTestNextFrom',
+        'latestTestNextTo'
+      ].includes(field.key)
     );
   }
 
@@ -109,6 +149,18 @@ export class OverlayComponent implements OnInit {
 
   updateSortDirection(value: string) {
     this.filterPayload?.onSortDirectionChange(value === 'desc' ? 'desc' : 'asc');
+  }
+
+  logout() {
+    this.close();
+    this.auth.logout();
+  }
+
+  getRoleLabel(role?: number): string {
+    if (role === 2) return 'Admin';
+    if (role === 1) return 'Editor';
+    if (role === 0) return 'Viewer';
+    return '-';
   }
 
   @HostListener('document:keydown.escape')

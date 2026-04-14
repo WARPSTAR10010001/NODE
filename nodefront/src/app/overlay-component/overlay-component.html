@@ -4,38 +4,94 @@
   <div id="style-overlay" class="overlay">
     <div class="title">
       <hr>
-      <h1>Style</h1>
+      <h1>Darstellung</h1>
     </div>
     <div id="theme-selection" class="selection">
       <h2>Farbmodus:</h2>
-      <div class="options">
-        <label class="option-card">
-          <input type="radio" name="theme" value="light" [checked]="selectedTheme === 'light'"
-            (change)="changeTheme('light')">
-          <span>Hell</span>
-        </label>
-        <label class="option-card">
-          <input type="radio" name="theme" value="dark" [checked]="selectedTheme === 'dark'"
-            (change)="changeTheme('dark')">
-          <span>Dunkel</span>
-        </label>
+      <div class="theme-segments" role="tablist" aria-label="Farbmodus">
+        <button type="button" class="theme-segment" [class.active]="selectedTheme === 'light'"
+          (click)="changeTheme('light')">
+          Hell
+        </button>
+        <button type="button" class="theme-segment" [class.active]="selectedTheme === 'dark'"
+          (click)="changeTheme('dark')">
+          Dunkel
+        </button>
       </div>
     </div>
     <hr>
     <div id="accent-selection" class="selection">
       <h2>Akzentfarbe:</h2>
-      <br>
-      <select [(ngModel)]="selectedAccent" (ngModelChange)="onAccentChange($event)">
-        <option value="blue">Blau</option>
-        <option value="green">Grün</option>
-        <option value="pink">Pink</option>
-        <option value="orange">Orange</option>
-        <option value="purple">Violett</option>
-      </select>
+      <div class="accent-grid">
+        <button type="button" class="accent-card accent-blue" [class.active]="selectedAccent === 'blue'"
+          (click)="changeAccent('blue')">
+          <span class="accent-label">Blau</span>
+        </button>
+        <button type="button" class="accent-card accent-green" [class.active]="selectedAccent === 'green'"
+          (click)="changeAccent('green')">
+          <span class="accent-label">Grün</span>
+        </button>
+        <button type="button" class="accent-card accent-pink" [class.active]="selectedAccent === 'pink'"
+          (click)="changeAccent('pink')">
+          <span class="accent-label">Pink</span>
+        </button>
+        <button type="button" class="accent-card accent-orange" [class.active]="selectedAccent === 'orange'"
+          (click)="changeAccent('orange')">
+          <span class="accent-label">Orange</span>
+        </button>
+        <button type="button" class="accent-card accent-purple" [class.active]="selectedAccent === 'purple'"
+          (click)="changeAccent('purple')">
+          <span class="accent-label">Violett</span>
+        </button>
+        <button type="button" class="accent-card accent-cyan" [class.active]="selectedAccent === 'cyan'"
+          (click)="changeAccent('cyan')">
+          <span class="accent-label">Cyan</span>
+        </button>
+      </div>
     </div>
-    <br>
     <div class="overlay-actions">
       <button (click)="close()">Schließen</button>
+    </div>
+  </div>
+  } @else if (overlayState.type === 'account' && accountPayload) {
+  <div class="overlay">
+    <div class="title">
+      <hr>
+      <h1>Konto</h1>
+    </div>
+    <div class="account-stack">
+      <div class="selection account-field">
+        <label>Nutzer</label>
+        <div class="account-value">{{ accountPayload.displayName }} ({{ accountPayload.username }})</div>
+      </div>
+      <div class="selection account-field">
+        <label>Status</label>
+        <div class="account-value">
+          @if (accountPayload.isActivated) {
+          Freigeschaltet ({{ getRoleLabel(accountPayload.role) }})
+          } @else {
+          Nicht freigeschaltet
+          }
+        </div>
+      </div>
+    </div>
+    <div class="overlay-actions">
+      <button (click)="close()">Schließen</button>
+      <button class="danger" (click)="logout()">Abmelden</button>
+    </div>
+  </div>
+  } @else if (overlayState.type === 'update') {
+  <div class="overlay">
+    <div class="title">
+      <hr>
+      <h1>Update {{ this.version.getDisplayVersion() }}</h1>
+    </div>
+    <p>{{ this.version.getUpdateSummary() }}</p>
+    <hr>
+    <p>Alle Änderungen von Version {{ this.version.getDisplayVersion() }} können im Changelog nachgelesen werden.</p>
+    <div class="button-row">
+      <button (click)="navigateChangelog()" class="confirm">Zum Changelog</button>
+      <button (click)="closeUpdate()">Schließen</button>
     </div>
   </div>
   } @else if (overlayState.type === 'debug') {
@@ -49,139 +105,150 @@
     <hr>
     <h2>Alle Browserdaten (localStorage) können durch den Knopf unten gelöscht werden. Dadurch werden alle
       Personalisierungen und der Session-Token gelöscht.</h2>
-      <div class="button-row">
-        <button (click)="close()">Schließen</button>
-        <button (click)="clearData()" class="danger">Daten löschen</button>
-      </div>
+    <div class="button-row">
+      <button (click)="close()">Schließen</button>
+      <button (click)="clearData()" class="danger">Daten löschen</button>
+    </div>
   </div>
-      } @else if (overlayState.type === 'filter' && filterPayload) {
-      <div class="overlay overlay-wide">
-        <div class="title">
-          <hr>
-          <h1>{{ filterPayload.title }}</h1>
-        </div>
-        <h2 class="section-label">Sortierung</h2>
-        <div class="filter-grid filter-grid-top">
-          <div class="selection filter-field">
-            <label for="overlay-sort-field">Sortieren nach</label>
-            <select id="overlay-sort-field" [ngModel]="filterPayload.sortField"
-              (ngModelChange)="updateSortField($event)">
-              @for (option of filterPayload.sortOptions; track option.value) {
-              <option [ngValue]="option.value">{{ option.label }}</option>
-              }
-            </select>
-          </div>
-          <div class="selection filter-field">
-            <label for="overlay-sort-direction">Reihenfolge</label>
-            <select id="overlay-sort-direction" [ngModel]="filterPayload.sortDirection"
-              (ngModelChange)="updateSortDirection($event)">
-              <option value="asc">Aufsteigend</option>
-              <option value="desc">Absteigend</option>
-            </select>
-          </div>
-        </div>
-        <hr class="overlay-divider">
-        <h2 class="section-label">Kerndaten</h2>
-        <div class="filter-grid">
-          @for (field of generalFilterFields; track field.key) {
-          <div class="selection filter-field">
-            <label [for]="'overlay-field-' + field.key">{{ field.label }}</label>
-            @if (field.type === 'select') {
-            <select [id]="'overlay-field-' + field.key" [ngModel]="field.value"
-              (ngModelChange)="updateFilterField(field.key, $event)">
-              @for (option of field.options || []; track option.value) {
-              <option [ngValue]="option.value">{{ option.label }}</option>
-              }
-            </select>
-            } @else if (field.type === 'autocomplete') {
-            <input [id]="'overlay-field-' + field.key" type="text" [ngModel]="field.value"
-              (ngModelChange)="updateFilterField(field.key, $event)" [placeholder]="field.placeholder || ''"
-              [attr.list]="'overlay-list-' + field.key">
-            <datalist [id]="'overlay-list-' + field.key">
-              @for (option of field.options || []; track option.value) {
-              <option [value]="option.label"></option>
-              }
-            </datalist>
-            } @else {
-            <input [id]="'overlay-field-' + field.key" [type]="field.type" [ngModel]="field.value"
-              (ngModelChange)="updateFilterField(field.key, $event)" [placeholder]="field.placeholder || ''">
+  } @else if (overlayState.type === 'filter' && filterPayload) {
+  <div class="overlay overlay-wide">
+    <div class="title">
+      <hr>
+      <h1>{{ filterPayload.title }}</h1>
+    </div>
+    <div class="filter-section">
+      <h2 class="section-label">Sortierung</h2>
+      <div class="filter-grid">
+        <div class="selection filter-field">
+          <label for="overlay-sort-field">Sortieren nach</label>
+          <select id="overlay-sort-field" [ngModel]="filterPayload.sortField" (ngModelChange)="updateSortField($event)">
+            @for (option of filterPayload.sortOptions; track option.value) {
+            <option [ngValue]="option.value">{{ option.label }}</option>
             }
-          </div>
-          }
+          </select>
         </div>
-        <hr class="overlay-divider">
-        <div class="filter-section">
-          <h2 class="section-label">Erstellungsdatum</h2>
-          <div class="filter-grid">
-            @for (field of createdDateFields; track field.key) {
-            <div class="selection filter-field">
-              <label [for]="'overlay-field-' + field.key">{{ field.label }}</label>
-              <input [id]="'overlay-field-' + field.key" [type]="field.type" [ngModel]="field.value"
-                (ngModelChange)="updateFilterField(field.key, $event)" [placeholder]="field.placeholder || ''">
-            </div>
-            }
-          </div>
-        </div>
-        <hr class="overlay-divider">
-        <div class="filter-section">
-          <div class="section-label">Änderungsdatum</div>
-          <div class="filter-grid">
-            @for (field of updatedDateFields; track field.key) {
-            <div class="selection filter-field">
-              <label [for]="'overlay-field-' + field.key">{{ field.label }}</label>
-              <input [id]="'overlay-field-' + field.key" [type]="field.type" [ngModel]="field.value"
-                (ngModelChange)="updateFilterField(field.key, $event)" [placeholder]="field.placeholder || ''">
-            </div>
-            }
-          </div>
-        </div>
-        <hr class="overlay-divider">
-        <div class="filter-section">
-          <h2 class="section-label">Technische Überprüfung</h2>
-          <div class="filter-grid">
-            @for (field of technicalReviewFields; track field.key) {
-            <div class="selection filter-field">
-              <label [for]="'overlay-field-' + field.key">{{ field.label }}</label>
-              <input [id]="'overlay-field-' + field.key" [type]="field.type" [ngModel]="field.value"
-                (ngModelChange)="updateFilterField(field.key, $event)" [placeholder]="field.placeholder || ''">
-            </div>
-            }
-          </div>
-        </div>
-        <hr class="overlay-divider">
-        <div class="overlay-actions">
-          <button (click)="close()">Schließen</button>
-          <div class="overlay-actions-right">
-            <button class="danger" (click)="resetFilterOverlay()">Zurücksetzen</button>
-            <button class="confirm" (click)="applyFilterOverlay()">Übernehmen</button>
-          </div>
+        <div class="selection filter-field">
+          <label for="overlay-sort-direction">Reihenfolge</label>
+          <select id="overlay-sort-direction" [ngModel]="filterPayload.sortDirection"
+            (ngModelChange)="updateSortDirection($event)">
+            <option value="asc">Aufsteigend</option>
+            <option value="desc">Absteigend</option>
+          </select>
         </div>
       </div>
-      } @else {
-      <div class="overlay">
-        <div class="title">
-          <hr>
-          <h1>
-            @if (overlayState.type === 'error') { Fehler }
-            @else if (overlayState.type === 'success') { Erfolg }
-            @else { Info }
-          </h1>
-        </div>
-        <p>{{ overlayState.message }}</p>
-        <div class="overlay-actions">
-          @if (overlayState.actions?.length) {
-          @for (action of overlayState.actions; track action.label) {
-          <button [class.danger]="action.closeOnly"
-            [class.confirm]="overlayState.type === 'success' && !action.closeOnly"
-            (click)="navigate(action.route, action.queryParams)">
-            {{ action.label }}
-          </button>
-          }
+    </div>
+    <hr class="overlay-divider">
+    <div class="filter-section">
+      <h2 class="section-label">Kerndaten</h2>
+      <div class="filter-grid">
+        @for (field of generalFilterFields; track field.key) {
+        <div class="selection filter-field">
+          <label [for]="'overlay-field-' + field.key">{{ field.label }}</label>
+          @if (field.type === 'select') {
+          <select [id]="'overlay-field-' + field.key" [ngModel]="field.value"
+            (ngModelChange)="updateFilterField(field.key, $event)">
+            @for (option of field.options || []; track option.value) {
+            <option [ngValue]="option.value">{{ option.label }}</option>
+            }
+          </select>
+          } @else if (field.type === 'autocomplete') {
+          <input [id]="'overlay-field-' + field.key" type="text" [ngModel]="field.value"
+            (ngModelChange)="updateFilterField(field.key, $event)" [placeholder]="field.placeholder || ''"
+            [attr.list]="'overlay-list-' + field.key">
+          <datalist [id]="'overlay-list-' + field.key">
+            @for (option of field.options || []; track option.value) {
+            <option [value]="option.label"></option>
+            }
+          </datalist>
           } @else {
-          <button (click)="close()">Schließen</button>
+          <input [id]="'overlay-field-' + field.key" [type]="field.type" [ngModel]="field.value"
+            (ngModelChange)="updateFilterField(field.key, $event)" [placeholder]="field.placeholder || ''">
           }
         </div>
+        }
       </div>
+    </div>
+    <hr class="overlay-divider">
+    <div class="filter-section">
+      <h2 class="section-label">Erstellungsdatum</h2>
+      <div class="filter-grid">
+        @for (field of createdDateFields; track field.key) {
+        <div class="selection filter-field">
+          <label [for]="'overlay-field-' + field.key">{{ field.label }}</label>
+          <input [id]="'overlay-field-' + field.key" [type]="field.type" [ngModel]="field.value"
+            (ngModelChange)="updateFilterField(field.key, $event)" [placeholder]="field.placeholder || ''">
+        </div>
+        }
+      </div>
+    </div>
+    <hr class="overlay-divider">
+    <div class="filter-section">
+      <h2 class="section-label">Änderungsdatum</h2>
+      <div class="filter-grid">
+        @for (field of updatedDateFields; track field.key) {
+        <div class="selection filter-field">
+          <label [for]="'overlay-field-' + field.key">{{ field.label }}</label>
+          <input [id]="'overlay-field-' + field.key" [type]="field.type" [ngModel]="field.value"
+            (ngModelChange)="updateFilterField(field.key, $event)" [placeholder]="field.placeholder || ''">
+        </div>
+        }
+      </div>
+    </div>
+    <hr class="overlay-divider">
+    <div class="filter-section">
+      <h2 class="section-label">Technische Überprüfung</h2>
+      <div class="filter-grid">
+        @for (field of technicalReviewFields; track field.key) {
+        <div class="selection filter-field">
+          <label [for]="'overlay-field-' + field.key">{{ field.label }}</label>
+          @if (field.type === 'select') {
+          <select [id]="'overlay-field-' + field.key" [ngModel]="field.value"
+            (ngModelChange)="updateFilterField(field.key, $event)">
+            @for (option of field.options || []; track option.value) {
+            <option [ngValue]="option.value">{{ option.label }}</option>
+            }
+          </select>
+          } @else {
+          <input [id]="'overlay-field-' + field.key" [type]="field.type" [ngModel]="field.value"
+            (ngModelChange)="updateFilterField(field.key, $event)" [placeholder]="field.placeholder || ''">
+          }
+        </div>
+        }
+      </div>
+    </div>
+    <hr class="overlay-divider">
+    <div class="overlay-actions">
+      <button (click)="close()">Schließen</button>
+      <div class="overlay-actions-right">
+        <button class="danger" (click)="resetFilterOverlay()">Zurücksetzen</button>
+        <button class="confirm" (click)="applyFilterOverlay()">Übernehmen</button>
+      </div>
+    </div>
+  </div>
+  } @else {
+  <div class="overlay">
+    <div class="title">
+      <hr>
+      <h1>
+        @if (overlayState.type === 'error') { Fehler }
+        @else if (overlayState.type === 'success') { Erfolg }
+        @else { Info }
+      </h1>
+    </div>
+    <p>{{ overlayState.message }}</p>
+    <div class="overlay-actions">
+      @if (overlayState.actions?.length) {
+      @for (action of overlayState.actions; track action.label) {
+      <button [class.danger]="action.closeOnly" [class.confirm]="overlayState.type === 'success' && !action.closeOnly"
+        (click)="navigate(action.route, action.queryParams)">
+        {{ action.label }}
+      </button>
       }
+      } @else {
+      <button (click)="close()">Schließen</button>
+      }
+    </div>
   </div>
   }
+</div>
+}

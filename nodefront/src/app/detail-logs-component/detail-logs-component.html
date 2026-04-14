@@ -65,7 +65,7 @@
             <p>{{ formatLogAuditLine(entry.changedByUsername, entry.changedAt) }}</p>
           </div>
         </div>
-
+        <hr>
         <div class="log-change-list">
           @for (change of entry.changes; track change.field + '-' + change.label) {
           <div class="log-change">

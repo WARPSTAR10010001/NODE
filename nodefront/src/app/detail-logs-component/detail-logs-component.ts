@@ -4,7 +4,10 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, forkJoin, map, of, switchMap, takeUntil, throwError } from 'rxjs';
 
 import { Device, DeviceLogEntry, DeviceService } from '../device-service';
+import { OverlayService } from '../overlay-service';
 import { LdapUser, UserService } from '../user-service';
+
+const RECENT_DEVICES_STORAGE_KEY = 'node.dashboard.recentDevices';
 
 @Component({
   selector: 'app-detail-logs-component',
@@ -29,6 +32,7 @@ export class DetailLogsComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private deviceService: DeviceService,
+    private overlay: OverlayService,
     private userService: UserService
   ) {}
 
@@ -73,6 +77,7 @@ export class DetailLogsComponent implements OnInit, OnDestroy {
         next: ({ device, logs }) => {
           this.device = device;
           this.logs = logs;
+          this.rememberRecentDevice(device);
           this.loading = false;
         },
         error: (error) => {
@@ -81,6 +86,7 @@ export class DetailLogsComponent implements OnInit, OnDestroy {
             ? error.message
             : 'Das Änderungsprotokoll konnte nicht geladen werden.';
           this.loading = false;
+          this.overlay.showOverlay('error', this.errorMessage);
         }
       });
   }
@@ -194,5 +200,30 @@ export class DetailLogsComponent implements OnInit, OnDestroy {
 
   private toShortUsername(username?: string): string {
     return String(username || '').split('@')[0].trim().toLowerCase();
+  }
+
+  private rememberRecentDevice(device: Device): void {
+    if (typeof localStorage === 'undefined') {
+      return;
+    }
+
+    const entry = {
+      inventoryNumber: device.inventoryNumber,
+      name: device.name || device.inventoryNumber,
+      lastViewedAt: this.dateFormatter.format(new Date())
+    };
+
+    try {
+      const rawValue = localStorage.getItem(RECENT_DEVICES_STORAGE_KEY);
+      const parsed = rawValue ? JSON.parse(rawValue) : [];
+      const recentDevices = Array.isArray(parsed) ? parsed : [];
+      const merged = [
+        entry,
+        ...recentDevices.filter((item) => item?.inventoryNumber !== entry.inventoryNumber)
+      ].slice(0, 3);
+
+      localStorage.setItem(RECENT_DEVICES_STORAGE_KEY, JSON.stringify(merged));
+    } catch {
+    }
   }
 }

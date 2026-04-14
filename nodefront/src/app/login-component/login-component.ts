@@ -28,7 +28,7 @@ export class LoginComponent {
     private router: Router,
     private overlay: OverlayService,
     private userService: UserService
-  ) {}
+  ) { }
 
   async submit() {
     if (this.username.trim().length === 0 || this.password.trim().length === 0) {
@@ -74,8 +74,6 @@ export class LoginComponent {
             return;
           }
         }
-
-        this.overlay.showOverlay('success', 'Sie wurden erfolgreich angemeldet.');
       }
     } catch (e: any) {
       const msg =

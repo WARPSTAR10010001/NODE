@@ -82,21 +82,29 @@
             <td>{{ statusLabel(user) }}</td>
             <td>{{ formatLastLogin(user.lastLogin) }}</td>
             <td>
+              @if (isCurrentUser(user)) {
+              <span>{{ activationDraftLabel(user) }}</span>
+              } @else {
               <select class="activation-select" [(ngModel)]="user.activationDraft">
                 <option value="false">Nicht freigeschaltet</option>
                 <option value="true">Freigeschaltet</option>
               </select>
+              }
             </td>
             <td>
+              @if (isCurrentUser(user)) {
+              <span>{{ roleDraftLabel(user) }}</span>
+              } @else {
               <select class="role-select" [(ngModel)]="user.roleDraft">
                 <option value="0">Viewer</option>
                 <option value="1">Editor</option>
                 <option value="2">Admin</option>
               </select>
+              }
             </td>
             <td>
               <button type="button" [class.confirm]="hasPendingChanges(user)"
-                [disabled]="user.saving || !hasPendingChanges(user)" (click)="saveUser(user)">
+                [disabled]="isCurrentUser(user) || user.saving || !hasPendingChanges(user)" (click)="saveUser(user)">
                 {{ user.saving ? 'Speichere...' : 'Speichern' }}
               </button>
             </td>

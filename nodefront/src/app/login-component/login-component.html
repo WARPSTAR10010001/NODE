@@ -3,7 +3,6 @@
     <hr>
     <h1>Anmeldung</h1>
   </div>
-
   <div class="login-layout">
     <div class="login-panel">
       <form class="login-form" (ngSubmit)="submit()" #f="ngForm">
@@ -20,7 +19,6 @@
                 placeholder="J123456"
                 required>
             </div>
-
             <div class="form-field">
               <label for="password">Passwort</label>
               <input
@@ -32,7 +30,6 @@
                 placeholder="Passwort"
                 required>
             </div>
-
             <div class="form-actions">
               <button type="submit" [disabled]="loading || !f.valid">
                 Anmelden

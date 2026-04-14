@@ -5,12 +5,9 @@
     </div>
     <section class="dashboard-section">
         <h1>Schnellstart</h1>
-
         <div class="quicklink-row">
             @for (link of quickLinks; track link.route) {
-            <a
-                class="card quicklink-card"
-                [routerLink]="[link.route]">
+            <a class="card quicklink-card" [routerLink]="[link.route]">
                 <h1>{{ link.label }}</h1>
                 <hr>
                 <p>{{ link.subtitle }}</p>
@@ -18,12 +15,39 @@
             }
         </div>
     </section>
-
+    @if (hasRecentDevices) {
     <hr>
-
     <section class="dashboard-section">
-        <h1>Statistiken</h1>
-
+        <div class="section-header">
+            <h1>Letzte Gerätezugriffe</h1>
+            <button type="button" (click)="clearRecentDevices()">Chronik löschen</button>
+        </div>
+        <div class="history-row">
+            @for (device of recentDevices; track device.inventoryNumber) {
+            <article class="card history-card">
+                <div class="history-card-head">
+                    <h1>{{ device.inventoryNumber }} <span class="history-name">{{ device.name || device.inventoryNumber
+                            }}</span></h1>
+                </div>
+                <hr>
+                <p class="history-time">Zuletzt angesehen: {{ device.lastViewedAt }}</p>
+                <button type="button" [routerLink]="['/devices', device.inventoryNumber]">Ansehen</button>
+                @if (canEditDevices) {
+                <button type="button" [routerLink]="['/devices', device.inventoryNumber, 'edit']">Bearbeiten</button>
+                }
+            </article>
+            }
+        </div>
+    </section>
+    }
+    <hr>
+    <section class="dashboard-section">
+        <div class="section-header">
+            <h1>Bestandscheck</h1>
+            @if (!loading && !error) {
+            <button type="button" (click)="refreshFacts()">Neue Karten laden</button>
+            }
+        </div>
         @if (loading) {
         <div class="facts-state">
             <p>Dashboard-Facts werden geladen...</p>

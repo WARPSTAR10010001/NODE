@@ -11,13 +11,22 @@
     gap: 10px;
 }
 
+.section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
 .dashboard-section h1,
 .fact-card h1 {
     margin: 0;
 }
 
 .quicklink-row,
-.facts-row {
+.facts-row,
+.history-row {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 10px;
@@ -96,9 +105,57 @@
 }
 
 .fact-card p,
-.facts-state p {
+.facts-state p,
+.history-card p {
     font-size: 0.6em;
     color: var(--tc);
+}
+
+.history-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background-color: var(--bgc);
+    color: var(--tc);
+    text-align: left;
+    padding: 20px;
+    cursor: default;
+}
+
+.history-card button {
+    font-size: 0.6em;
+}
+
+.history-card:hover {
+    background-color: var(--bgc);
+    color: var(--tc);
+}
+
+.history-card-head {
+    display: flex;
+    gap: 6px;
+    align-items: baseline;
+    flex-wrap: wrap;
+}
+
+.history-card h1 {
+    color: var(--accent);
+    font-size: 0.75em;
+}
+
+.history-name {
+    color: var(--tc);
+    margin-left: 8px;
+}
+
+.history-card hr {
+    width: 100%;
+    margin: 0;
+    border-color: var(--tc);
+}
+
+.history-time {
+    margin: 0;
 }
 
 .facts-state.error {
@@ -108,14 +165,24 @@
 
 @media (max-width: 900px) {
     .quicklink-row,
-    .facts-row {
+    .facts-row,
+    .history-row {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 
 @media (max-width: 640px) {
     .quicklink-row,
-    .facts-row {
+    .facts-row,
+    .history-row {
         grid-template-columns: 1fr;
+    }
+
+    .section-header {
+        align-items: stretch;
+    }
+
+    .history-actions {
+        flex-direction: column;
     }
 }

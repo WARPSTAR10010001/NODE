@@ -68,6 +68,15 @@ const DEVICE_PAGE_FETCH_SIZE = 200;
 const DEFAULT_PAGE_SIZE = 20;
 const DEFAULT_SORT_FIELD: SortField = 'lastEditAt';
 const DEFAULT_SORT_DIRECTION: SortDirection = 'desc';
+const DEVICE_OVERVIEW_STATE_KEY = 'node.devices.overviewState';
+
+type StoredOverviewState = {
+  searchTerm?: string;
+  page?: number;
+  sortField?: SortField;
+  sortDirection?: SortDirection;
+  filters?: Partial<FilterState>;
+};
 
 @Component({
   selector: 'app-devices-component',
@@ -119,6 +128,7 @@ export class DevicesComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.setupLdapSearch();
+    this.restoreOverviewState();
     this.loadData();
   }
 
@@ -138,12 +148,14 @@ export class DevicesComponent implements OnInit, OnDestroy {
   resetAllFilters(): void {
     this.filters = this.createEmptyFilters();
     this.draftFilters = this.createEmptyFilters();
+    this.searchTerm = '';
     this.ldapResults = [];
     this.sortField = DEFAULT_SORT_FIELD;
     this.draftSortField = DEFAULT_SORT_FIELD;
     this.sortDirection = DEFAULT_SORT_DIRECTION;
     this.draftSortDirection = DEFAULT_SORT_DIRECTION;
     this.page = 1;
+    this.clearStoredOverviewState();
     this.applyFiltersAndSorting();
   }
 
@@ -151,6 +163,7 @@ export class DevicesComponent implements OnInit, OnDestroy {
     if (page < 1 || page > this.totalPages) return;
     this.page = page;
     this.sliceCurrentPage();
+    this.persistOverviewState();
   }
 
   onSearchChange(): void {
@@ -183,6 +196,13 @@ export class DevicesComponent implements OnInit, OnDestroy {
     return Object.entries(this.filters)
       .filter(([key, value]) => key !== 'assignedToDisplay' && value.trim().length > 0)
       .length;
+  }
+
+  get hasSavedViewState(): boolean {
+    return this.searchTerm.trim().length > 0
+      || this.activeFilterCount > 0
+      || this.sortField !== DEFAULT_SORT_FIELD
+      || this.sortDirection !== DEFAULT_SORT_DIRECTION;
   }
 
   get totalPages(): number {
@@ -257,6 +277,7 @@ export class DevicesComponent implements OnInit, OnDestroy {
         error: (error) => {
           console.error('Failed to load devices:', error);
           this.loading = false;
+          this.overlayService.showOverlay('error', 'Geräte konnten nicht geladen werden.');
         }
       });
   }
@@ -521,6 +542,81 @@ export class DevicesComponent implements OnInit, OnDestroy {
     }
 
     this.sliceCurrentPage();
+    this.persistOverviewState();
+  }
+
+  private restoreOverviewState(): void {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const rawState = window.localStorage.getItem(DEVICE_OVERVIEW_STATE_KEY);
+    if (!rawState) {
+      return;
+    }
+
+    try {
+      const parsedState = JSON.parse(rawState) as StoredOverviewState;
+      this.searchTerm = typeof parsedState.searchTerm === 'string' ? parsedState.searchTerm : '';
+      this.page = typeof parsedState.page === 'number' && parsedState.page > 0 ? parsedState.page : 1;
+      this.sortField = this.isSortField(parsedState.sortField) ? parsedState.sortField : DEFAULT_SORT_FIELD;
+      this.draftSortField = this.sortField;
+      this.sortDirection = parsedState.sortDirection === 'asc' || parsedState.sortDirection === 'desc'
+        ? parsedState.sortDirection
+        : DEFAULT_SORT_DIRECTION;
+      this.draftSortDirection = this.sortDirection;
+      this.filters = this.mergeStoredFilters(parsedState.filters);
+      this.draftFilters = { ...this.filters };
+    } catch {
+      this.clearStoredOverviewState();
+    }
+  }
+
+  private persistOverviewState(): void {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const state: StoredOverviewState = {
+      searchTerm: this.searchTerm,
+      page: this.page,
+      sortField: this.sortField,
+      sortDirection: this.sortDirection,
+      filters: { ...this.filters }
+    };
+
+    window.localStorage.setItem(DEVICE_OVERVIEW_STATE_KEY, JSON.stringify(state));
+  }
+
+  private clearStoredOverviewState(): void {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    window.localStorage.removeItem(DEVICE_OVERVIEW_STATE_KEY);
+  }
+
+  private mergeStoredFilters(filters?: Partial<FilterState>): FilterState {
+    return {
+      ...this.createEmptyFilters(),
+      ...(filters || {})
+    };
+  }
+
+  private isSortField(value: unknown): value is SortField {
+    return [
+      'assignedToUsername',
+      'categoryName',
+      'statusName',
+      'locationCity',
+      'networkEnvironmentName',
+      'latestTestTester',
+      'latestTestResult',
+      'latestTestLastTest',
+      'latestTestNextAt',
+      'createdAt',
+      'lastEditAt'
+    ].includes(String(value));
   }
 
   private sliceCurrentPage(): void {
@@ -763,6 +859,7 @@ export class DevicesComponent implements OnInit, OnDestroy {
           this.ldapLoading = false;
           this.ldapResults = [];
           this.refreshFilterOverlay();
+          this.overlayService.showOverlay('error', 'LDAP-Suche konnte nicht geladen werden.');
         }
       });
   }

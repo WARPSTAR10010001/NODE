@@ -190,11 +190,15 @@ export class CreateComponent implements OnInit, OnDestroy {
   }
 
   onSubmit(): void {
-    if (this.form.invalid || this.submitting) return;
+    if (this.submitting) return;
 
-    const electronicTestError = this.validateElectronicTestSection();
-    if (electronicTestError) {
-      this.overlay.showOverlay('error', electronicTestError);
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      const missingFields = this.getMissingRequiredFields();
+      const message = missingFields.length > 0
+        ? `Bitte fülle folgende Pflichtfelder aus: ${missingFields.join(', ')}.`
+        : 'Bitte fülle alle Pflichtfelder aus.';
+      this.overlay.showOverlay('error', message);
       return;
     }
 
@@ -269,19 +273,19 @@ export class CreateComponent implements OnInit, OnDestroy {
   private loadLookups(): void {
     this.categoryService.list().subscribe({
       next: (res) => (this.categories = res.categories),
-      error: (err) => console.error('Load categories failed', err)
+      error: (err) => this.handleError('Load categories failed', err, 'Kategorien konnten nicht geladen werden.')
     });
     this.statusService.list().subscribe({
       next: (res) => (this.statuses = res.statuses),
-      error: (err) => console.error('Load statuses failed', err)
+      error: (err) => this.handleError('Load statuses failed', err, 'Status konnten nicht geladen werden.')
     });
     this.locationService.list().subscribe({
       next: (res) => (this.locations = res.locations),
-      error: (err) => console.error('Load locations failed', err)
+      error: (err) => this.handleError('Load locations failed', err, 'Standorte konnten nicht geladen werden.')
     });
     this.networkEnvService.list().subscribe({
       next: (res) => (this.networkEnvironments = res.networkEnvironments),
-      error: (err) => console.error('Load network environments failed', err)
+      error: (err) => this.handleError('Load network environments failed', err, 'Netzwerkumgebungen konnten nicht geladen werden.')
     });
   }
 
@@ -385,28 +389,6 @@ export class CreateComponent implements OnInit, OnDestroy {
     };
   }
 
-  private validateElectronicTestSection(): string | null {
-    if (this.entityType !== 'device') return null;
-
-    const raw = this.form.getRawValue();
-    const values = [
-      this.normalizeText(raw.latestTestTester),
-      raw.latestTestLastTest || null,
-      this.normalizeText(raw.latestTestResult),
-      this.normalizeNumber(raw.latestTestNextPeriod)
-    ];
-
-    const hasAnyValue = values.some((value) => value !== null);
-    const hasAllValues = values.every((value) => value !== null);
-
-    if (!hasAnyValue) return null;
-    if (!hasAllValues) {
-      return 'Für die Prüfungssektion bitte letzter Tester, letzter Test, Testergebnis und Testintervall vollständig ausfüllen.';
-    }
-
-    return null;
-  }
-
   private setupNextTestPreview(): void {
     this.updateNextTestPreview();
 
@@ -498,6 +480,38 @@ export class CreateComponent implements OnInit, OnDestroy {
       || value === 'status'
       || value === 'location'
       || value === 'network-environment';
+  }
+
+  private getMissingRequiredFields(): string[] {
+    const requiredFieldLabels = this.getRequiredFieldLabels();
+
+    return Object.entries(requiredFieldLabels)
+      .filter(([controlName]) => this.form.get(controlName)?.invalid)
+      .map(([, label]) => label);
+  }
+
+  private getRequiredFieldLabels(): Record<string, string> {
+    switch (this.entityType) {
+      case 'device':
+        return {
+          name: 'Name',
+          categoryId: 'Kategorie',
+          statusId: 'Status'
+        };
+      case 'category':
+      case 'status':
+      case 'network-environment':
+        return {
+          name: 'Name'
+        };
+      case 'location':
+        return {
+          city: 'Stadt',
+          address: 'Adresse'
+        };
+      default:
+        return {};
+    }
   }
 
   private handleSuccess(message: string, manageType?: 'category' | 'status' | 'location' | 'network-environment'): void {

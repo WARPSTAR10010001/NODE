@@ -1,13 +1,14 @@
-Components:
+Komponente:
 
-Documentation-Aufbau aus CLOCKWORK klauen
-Logs
+Documentation-Aufbau
 
 
-Misc:
+Anderes:
 
-Deployment (frontend + backend + database)
-Filter und Sortierung (Technische Überprüfung ist kreuz und quer)
-Statistiken überarbeiten
+Deployment (Frontend + Backend + DB)
 Kerndatenverwaltung Typ Select breiter machen + URL anpassen
-Update Overlay
+Überschriften mit Akzentfarbe färben
+Konto-Schaltfläche verbessern
+Pending-Ansicht verbessern
+Bestätigungs-Overlay
+Umlaute in den Fehlermeldungen (Login)

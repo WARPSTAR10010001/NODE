@@ -216,39 +216,36 @@ async function createDeviceLog(client, { deviceId, inventoryNumber, section, cha
 }
 
 function normalizeElectronicTestPayload(body) {
-  const hasAnyField = [
-    'latestTestTester',
-    'latestTestLastTest',
-    'latestTestResult',
-    'latestTestNextPeriod',
-    'latestTestScale'
-  ].some((key) => hasOwn(body, key) && body[key] !== undefined && body[key] !== null && body[key] !== '');
-
-  if (!hasAnyField) return null;
-
   const tester = String(body.latestTestTester || '').trim();
-  const lastTestDate = toDate(body.latestTestLastTest);
+  const hasLastTest = body.latestTestLastTest !== undefined && body.latestTestLastTest !== null && body.latestTestLastTest !== '';
+  const lastTestDate = hasLastTest ? toDate(body.latestTestLastTest) : null;
   const lastTestResult = String(body.latestTestResult || '').trim();
-  const nextTestPeriod = toInt(body.latestTestNextPeriod);
-  const scale = String(body.latestTestScale || 'months').trim().toLowerCase();
+  const hasNextTestPeriod = body.latestTestNextPeriod !== undefined && body.latestTestNextPeriod !== null && body.latestTestNextPeriod !== '';
+  const nextTestPeriod = hasNextTestPeriod ? toInt(body.latestTestNextPeriod) : null;
+  const hasScale = body.latestTestScale !== undefined && body.latestTestScale !== null && body.latestTestScale !== '';
+  const scale = hasScale ? String(body.latestTestScale).trim().toLowerCase() : 'months';
 
-  if (!tester || !body.latestTestLastTest || !lastTestResult || !nextTestPeriod) {
+  if (!tester && !hasLastTest && !lastTestResult && !hasNextTestPeriod) {
+    return null;
+  }
+
+  if (!tester || !hasLastTest || !lastTestResult || !hasNextTestPeriod) {
     throw new Error('Für eine Geräteprüfung sind letzter Tester, letzter Test, Testergebnis und Testintervall erforderlich.');
   }
 
-  if (lastTestDate === undefined) {
+  if (hasLastTest && lastTestDate === undefined) {
     throw new Error('latestTestLastTest muss ein gueltiges Datum sein.');
   }
 
-  if (!['pass', 'fail'].includes(lastTestResult)) {
+  if (lastTestResult && !['pass', 'fail'].includes(lastTestResult)) {
     throw new Error('latestTestResult muss pass oder fail sein.');
   }
 
-  if (!['months', 'years'].includes(scale)) {
+  if (hasScale && !['months', 'years'].includes(scale)) {
     throw new Error('latestTestScale muss months oder years sein.');
   }
 
-  if (nextTestPeriod < 1) {
+  if (hasNextTestPeriod && (!nextTestPeriod || nextTestPeriod < 1)) {
     throw new Error('latestTestNextPeriod muss eine positive Zahl sein.');
   }
 
@@ -288,6 +285,10 @@ async function ensureDepreciationId(body) {
   );
 
   return created.rows[0].id;
+}
+
+function generateInventoryNumber() {
+  return `NODE-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
 }
 
 const depreciationEndSql = `
@@ -518,68 +519,90 @@ router.post('/devices', requireAuth, requireActivated, requireEditor, async (req
     return res.status(400).json({ error: 'purchase muss ein gueltiges Datum sein.' });
   }
 
-  const generatedInventoryNumber = `NODE-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
-
   try {
     const depreciationId = await ensureDepreciationId(body);
     const electronicTest = normalizeElectronicTestPayload(body);
     const client = await pool.connect();
 
     try {
-      await client.query('BEGIN');
+      let insertedDevice = null;
+      let lastInsertError = null;
 
-      const { rows } = await client.query(
-        `
-        INSERT INTO devices (
-          "inventoryNumber", name, "categoryId", "statusId",
-          purchase, price, supplier, "depreciationId", "accountingType",
-          "assignedToUserId",
-          "locationId", "networkEnvironmentId",
-          manufacturer, model, "serialNumber",
-          "patchPanelLabel", "ipAddress", "macAddresses",
-          "leaseDurationMonths", "contractType",
-          notes,
-          "createdBy", "createdAt", "lastEditBy", "lastEditAt"
-        )
-        VALUES (
-          $1,$2,$3,$4,
-          $5,$6,$7,$8,$9,
-          $10,
-          $11,$12,
-          $13,$14,$15,
-          $16,$17,$18,
-          $19,$20,
-          $21,
-          $22,NOW(),$23,NOW()
-        )
-        RETURNING *
-        `,
-        [
-          generatedInventoryNumber,
-          String(body.name).trim(),
-          toInt(body.categoryId),
-          toInt(body.statusId),
-          purchaseDate,
-          body.price ?? null,
-          body.supplier ?? null,
-          depreciationId,
-          body.accountingType ?? 'konsumtiv',
-          toInt(body.assignedToUserId),
-          toInt(body.locationId),
-          toInt(body.networkEnvironmentId),
-          body.manufacturer ?? null,
-          body.model ?? null,
-          body.serialNumber ?? null,
-          body.patchPanelLabel ?? null,
-          body.ipAddress ?? null,
-          macs === undefined ? null : macs,
-          toInt(body.leaseDurationMonths),
-          body.contractType ?? null,
-          body.notes ?? null,
-          req.user.id,
-          req.user.id,
-        ]
-      );
+      for (let attempt = 0; attempt < 5; attempt += 1) {
+        try {
+          await client.query('BEGIN');
+
+          const generatedInventoryNumber = generateInventoryNumber();
+          const { rows } = await client.query(
+            `
+            INSERT INTO devices (
+              "inventoryNumber", name, "categoryId", "statusId",
+              purchase, price, supplier, "depreciationId", "accountingType",
+              "assignedToUserId",
+              "locationId", "networkEnvironmentId",
+              manufacturer, model, "serialNumber",
+              "patchPanelLabel", "ipAddress", "macAddresses",
+              "leaseDurationMonths", "contractType",
+              notes,
+              "createdBy", "createdAt", "lastEditBy", "lastEditAt"
+            )
+            VALUES (
+              $1,$2,$3,$4,
+              $5,$6,$7,$8,$9,
+              $10,
+              $11,$12,
+              $13,$14,$15,
+              $16,$17,$18,
+              $19,$20,
+              $21,
+              $22,NOW(),$23,NOW()
+            )
+            RETURNING *
+            `,
+            [
+              generatedInventoryNumber,
+              String(body.name).trim(),
+              toInt(body.categoryId),
+              toInt(body.statusId),
+              purchaseDate,
+              body.price ?? null,
+              body.supplier ?? null,
+              depreciationId,
+              body.accountingType ?? 'konsumtiv',
+              toInt(body.assignedToUserId),
+              toInt(body.locationId),
+              toInt(body.networkEnvironmentId),
+              body.manufacturer ?? null,
+              body.model ?? null,
+              body.serialNumber ?? null,
+              body.patchPanelLabel ?? null,
+              body.ipAddress ?? null,
+              macs === undefined ? null : macs,
+              toInt(body.leaseDurationMonths),
+              body.contractType ?? null,
+              body.notes ?? null,
+              req.user.id,
+              req.user.id,
+            ]
+          );
+
+          insertedDevice = rows[0];
+          break;
+        } catch (error) {
+          await client.query('ROLLBACK');
+
+          if (error.code === '23505') {
+            lastInsertError = error;
+            continue;
+          }
+
+          throw error;
+        }
+      }
+
+      if (!insertedDevice) {
+        throw lastInsertError || new Error('Inventarnummer konnte nicht eindeutig erzeugt werden.');
+      }
 
       if (electronicTest) {
         await client.query(
@@ -593,7 +616,7 @@ router.post('/devices', requireAuth, requireActivated, requireEditor, async (req
           )
           `,
           [
-            rows[0].id,
+            insertedDevice.id,
             electronicTest.tester,
             electronicTest.lastTest,
             electronicTest.lastTestResult,
@@ -606,7 +629,7 @@ router.post('/devices', requireAuth, requireActivated, requireEditor, async (req
       }
 
       await client.query('COMMIT');
-      return res.status(201).json({ device: rows[0] });
+      return res.status(201).json({ device: insertedDevice });
     } catch (error) {
       await client.query('ROLLBACK');
       throw error;

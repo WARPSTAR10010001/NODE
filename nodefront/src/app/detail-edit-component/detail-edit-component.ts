@@ -20,6 +20,7 @@ import { Status, StatusService } from '../status-service';
 import { LdapUser, UserRecord, UserService } from '../user-service';
 
 const OPTIONAL_MAC_PATTERN = /^$|^([0-9A-Fa-f]{2}([-:])){5}[0-9A-Fa-f]{2}$/;
+const RECENT_DEVICES_STORAGE_KEY = 'node.dashboard.recentDevices';
 
 @Component({
   selector: 'app-detail-edit-component',
@@ -302,10 +303,12 @@ export class DetailEditComponent implements OnInit, OnDestroy {
             .pipe(takeUntil(this.destroy$))
             .subscribe({
               next: () => {
+                this.rememberRecentDevice(this.device!);
                 this.buildForm(this.device!);
                 this.loading = false;
               },
               error: () => {
+                this.rememberRecentDevice(this.device!);
                 this.buildForm(this.device!);
                 this.loading = false;
               }
@@ -317,6 +320,7 @@ export class DetailEditComponent implements OnInit, OnDestroy {
             ? error.message
             : 'Die Bearbeitungsansicht konnte nicht geladen werden.';
           this.loading = false;
+          this.overlay.showOverlay('error', this.errorMessage);
         }
       });
   }
@@ -610,5 +614,30 @@ export class DetailEditComponent implements OnInit, OnDestroy {
       return typeof nested === 'string' ? nested : null;
     }
     return null;
+  }
+
+  private rememberRecentDevice(device: Device): void {
+    if (typeof localStorage === 'undefined') {
+      return;
+    }
+
+    const entry = {
+      inventoryNumber: device.inventoryNumber,
+      name: device.name || device.inventoryNumber,
+      lastViewedAt: this.dateFormatter.format(new Date())
+    };
+
+    try {
+      const rawValue = localStorage.getItem(RECENT_DEVICES_STORAGE_KEY);
+      const parsed = rawValue ? JSON.parse(rawValue) : [];
+      const recentDevices = Array.isArray(parsed) ? parsed : [];
+      const merged = [
+        entry,
+        ...recentDevices.filter((item) => item?.inventoryNumber !== entry.inventoryNumber)
+      ].slice(0, 3);
+
+      localStorage.setItem(RECENT_DEVICES_STORAGE_KEY, JSON.stringify(merged));
+    } catch {
+    }
   }
 }

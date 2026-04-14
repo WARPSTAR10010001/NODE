@@ -76,11 +76,6 @@ p {
   margin-bottom: 0;
 }
 
-.section-label + .filter-grid.filter-grid-top,
-.section-label + .filter-grid {
-  margin-top: 12px;
-}
-
 .filter-field {
   margin-bottom: 0;
 }
@@ -102,71 +97,122 @@ p {
   margin: 20px 0;
 }
 
-#style-overlay .options {
-  gap: 0;
+.account-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
 }
 
-#style-overlay .option-card {
-  min-width: 130px;
-  padding: 12px 16px;
-  border: none;
-  border-radius: 5px;
-  background: transparent;
-  cursor: pointer;
-  justify-content: flex-start;
-  gap: 8px;
+.account-field {
+  gap: 6px;
 }
 
-#style-overlay .option-card:hover {
-  color: var(--tc);
+.account-field label {
+  font-size: 1.45em;
 }
 
-#style-overlay .option-card:has(input[type="radio"]:checked) {
-  background: transparent;
-  color: var(--tc);
+.account-value {
+  font-size: 1.6em;
+  line-height: 1.2;
 }
 
-#style-overlay .option-card:has(input[type="radio"]:checked):hover {
-  color: var(--tc);
+#style-overlay .selection {
+  gap: 12px;
 }
 
-#style-overlay .option-card span {
-  font-size: 1.25em;
+#style-overlay #accent-selection {
+  margin-bottom: 24px;
 }
 
-#style-overlay .option-card input[type="radio"] {
-  width: 52px;
-  height: 30px;
-  border-radius: 999px;
-  border: 3px solid var(--tc);
-  background-color: var(--bgc);
-  padding: 0;
-  margin: 0;
-  position: relative;
+#style-overlay .theme-segments {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
 }
 
-#style-overlay .option-card input[type="radio"]::before {
-  content: "";
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background-color: var(--tc);
-  transform: translateX(-10px);
+#style-overlay .theme-segment {
+  width: 100%;
 }
 
-#style-overlay .option-card input[type="radio"]:hover {
-  border-color: var(--tc);
-  transform: none;
-}
-
-#style-overlay .option-card input[type="radio"]:checked {
-  border-color: var(--tc);
+#style-overlay .theme-segment.active {
   background-color: var(--accent);
+  color: var(--bgc);
+  border-color: var(--accent);
 }
 
-#style-overlay .option-card input[type="radio"]:checked::before {
+#style-overlay .accent-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+#style-overlay .accent-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc((100% - 20px) / 3);
+  height: 42px;
+  min-width: 0;
+  padding: 0 10px;
+  border-color: var(--tc);
   background-color: var(--tc);
-  transform: translateX(10px);
+  color: var(--bgc);
+  border-color: var(--tc);
+  box-sizing: border-box;
+  border-radius: 5px;
+}
+
+#style-overlay .accent-card.active {
+  border-color: var(--accent);
+  background-color: var(--accent);
+  color: var(--bgc);
+}
+
+#style-overlay .accent-card:not(.active):hover {
+  background-color: var(--bgc);
+}
+
+#style-overlay .accent-label {
+  font-size: 1em;
+  line-height: 1;
+}
+
+#style-overlay .accent-card:not(.active).accent-blue:hover {
+  border-color: var(--blueacc);
+  color: var(--blueacc);
+}
+
+#style-overlay .accent-card:not(.active).accent-green:hover {
+  border-color: var(--greenacc);
+  color: var(--greenacc);
+}
+
+#style-overlay .accent-card:not(.active).accent-pink:hover {
+  border-color: var(--pinkacc);
+  color: var(--pinkacc);
+}
+
+#style-overlay .accent-card:not(.active).accent-orange:hover {
+  border-color: var(--orangeacc);
+  color: var(--orangeacc);
+}
+
+#style-overlay .accent-card:not(.active).accent-cyan:hover {
+  border-color: var(--cyanacc);
+  color: var(--cyanacc);
+}
+
+#style-overlay .accent-card:not(.active).accent-purple:hover {
+  border-color: var(--purpleacc);
+  color: var(--purpleacc);
+}
+
+@media (max-width: 700px) {
+  #style-overlay .accent-card {
+    width: calc((100% - 10px) / 2);
+  }
 }
 
 .overlay-actions {

@@ -3,6 +3,7 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { forkJoin, map, of, Subject, switchMap, takeUntil } from 'rxjs';
 
+import { AuthService } from '../auth-service';
 import { OverlayService } from '../overlay-service';
 import { LdapUser, UserRecord, UserService } from '../user-service';
 
@@ -41,6 +42,7 @@ export class AdminComponent implements OnInit, OnDestroy {
   private readonly destroy$ = new Subject<void>();
 
   constructor(
+    private authService: AuthService,
     private userService: UserService,
     private overlay: OverlayService
   ) {}
@@ -78,7 +80,7 @@ export class AdminComponent implements OnInit, OnDestroy {
   }
 
   saveUser(user: UserRow): void {
-    if (user.saving || !this.hasPendingChanges(user)) return;
+    if (this.isCurrentUser(user) || user.saving || !this.hasPendingChanges(user)) return;
 
     const activated = user.activationDraft === 'true';
     const role = Number(user.roleDraft) as RoleValue;
@@ -133,6 +135,18 @@ export class AdminComponent implements OnInit, OnDestroy {
     if (!value) return '-';
     const date = new Date(value);
     return Number.isNaN(date.getTime()) ? '-' : this.dateFormatter.format(date);
+  }
+
+  isCurrentUser(user: UserRow): boolean {
+    return this.authService.user?.id === user.id;
+  }
+
+  activationDraftLabel(user: UserRow): string {
+    return user.activationDraft === 'true' ? 'Freigeschaltet' : 'Nicht freigeschaltet';
+  }
+
+  roleDraftLabel(user: UserRow): string {
+    return this.roleLabel(Number(user.roleDraft));
   }
 
   hasPendingChanges(user: UserRow): boolean {
