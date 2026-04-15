@@ -1,17 +1,31 @@
-<div class="cc">
+<div class="pending-page">
   <div class="title">
     <hr>
-    <h1>Freischaltung</h1>
+    <h1>Freischaltung ausstehend</h1>
   </div>
-  <div>
-    <h1>Ihre Zugriffsanfrage wurde versendet!</h1>
-    <p>Um Zugriff auf das NODE-System zu erhalten müssen Sie erst von einem Systemadministrator freigeschaltet werden. Wenn Sie freigeschaltet worden sind, werden Sie darüber telefonisch oder per E-Mail benachrichtigt.</p>
-    <hr>
-    <h1>Warum ist das notwendig?</h1>
-    <p>Dieser Prozess ist notwendig, damit die sensiblen Informationen, die in NODE gespeichert werden, nicht unkontrolliert angesehen und bearbeitet werden können.</p>
-    <hr>
-    <h1>Wurden Sie bereits freigeschaltet?</h1>
-    <p>Falls Sie freigeschaltet sind, jedoch auf dieser Seite landen, versuchen Sie den Knopf unten anzuklicken oder die Seite neu zu laden.</p>
-    <button (click)="navigateDashboard()">Zum Dashboard</button>
+  <h1>Warum wird diese Seite angezeigt?</h1>
+  <p>Sie wurden erfolgreich angemeldet, Ihr Konto wurde jedoch noch nicht durch einen Systemadministrator freigeschaltet. Deshalb ist aktuell noch kein Zugriff auf NODE möglich.</p>
+  <hr>
+  <h1>Was bedeutet das für Ihr Konto?</h1>
+  <p>Bis zur Freischaltung können Sie in NODE momentan keine weiteren Aktionen ausführen. Ihr Konto bleibt so lange in der Freigabewarteschlange, bis eine Berechtigung erteilt wurde.</p>
+  <p>
+    @if (displayName && username) {
+    Aktueller Nutzer: {{ displayName }} ({{ username }})<br>
+    } @else {
+    Aktueller Nutzer: Nicht verfügbar<br>
+    }
+    Status: Nicht freigeschaltet
+  </p>
+
+  <hr>
+
+  <h1>Was können Sie jetzt tun?</h1>
+  <p>Falls Ihre Freischaltung inzwischen erfolgt ist, können Sie Ihre aktuellen Nutzerdaten erneut laden. Sobald Ihr Konto freigeschaltet ist, werden Sie automatisch zum Dashboard weitergeleitet.</p>
+
+  <div class="pending-actions">
+    <button type="button" class="danger" (click)="logout()">Abmelden</button>
+    <button type="button" class="confirm" [disabled]="loading" (click)="retryStatusCheck()">
+      Erneut versuchen
+    </button>
   </div>
 </div>

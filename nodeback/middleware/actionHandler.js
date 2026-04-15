@@ -15,11 +15,11 @@ async function requireAuth(req, res, next) {
   const token = getToken(req);
 
   if (!token) {
-    return res.status(401).json({ error: 'Anmeldung erforderlich.' });
+    return res.status(401).json({ error: 'Eine Anmeldung ist erforderlich.' });
   }
 
   if (!process.env.JWT_SECRET) {
-    return res.status(500).json({ error: 'JWT-Konfiguration fehlt auf dem Server.' });
+    return res.status(500).json({ error: 'Die JWT-Konfiguration fehlt auf dem Server.' });
   }
 
   try {
@@ -32,24 +32,24 @@ async function requireAuth(req, res, next) {
     );
 
     if (rows.length === 0) {
-      return res.status(401).json({ error: 'Benutzerkonto wurde nicht gefunden.' });
+      return res.status(401).json({ error: 'Das Benutzerkonto konnte nicht gefunden werden.' });
     }
 
     req.user = rows[0];
     req.jwt = payload;
     return next();
   } catch (error) {
-    return res.status(401).json({ error: 'Sitzung ist ungueltig oder abgelaufen.' });
+    return res.status(401).json({ error: 'Die Sitzung ist ungültig oder abgelaufen.' });
   }
 }
 
 function requireActivated(req, res, next) {
   if (!req.user) {
-    return res.status(401).json({ error: 'Anmeldung erforderlich.' });
+    return res.status(401).json({ error: 'Eine Anmeldung ist erforderlich.' });
   }
 
   if (!req.user.isActivated) {
-    return res.status(403).json({ error: 'Dein Konto wartet noch auf Freigabe.' });
+    return res.status(403).json({ error: 'Das aktuell angemeldete Konto benötigt noch eine Freigabe durch Systemadministratoren.' });
   }
 
   return next();
@@ -58,18 +58,18 @@ function requireActivated(req, res, next) {
 function requireMinRole(minRole) {
   return (req, res, next) => {
     if (!req.user) {
-      return res.status(401).json({ error: 'Anmeldung erforderlich.' });
+      return res.status(401).json({ error: 'Eine Anmeldung ist erforderlich.' });
     }
 
     if (!Number.isInteger(req.user.role)) {
-      return res.status(403).json({ error: 'Rollenkonfiguration des Kontos ist ungueltig.' });
+      return res.status(403).json({ error: 'Die Rollenkonfiguration des Kontos ist ungültig.' });
     }
 
     if (req.user.role >= minRole) {
       return next();
     }
 
-    return res.status(403).json({ error: 'Du hast keine Berechtigung fuer diese Aktion.' });
+    return res.status(403).json({ error: 'Die benötigten Berechtigungen für die Aktion fehlen dem aktuell angemeldeten Konto.' });
   };
 }
 

@@ -90,7 +90,7 @@ router.get('/ldap/search', requireAuth, requireActivated, async (req, res) => {
   const ad = getAdClient();
   if (!ad) {
     return res.status(503).json({
-      error: 'LDAP-Suche ist aktuell nicht konfiguriert.',
+      error: 'Die LDAP-Suche ist aktuell nicht konfiguriert.',
     });
   }
 
@@ -111,7 +111,7 @@ router.get('/ldap/search', requireAuth, requireActivated, async (req, res) => {
   } catch (error) {
     console.error('[LDAP SEARCH ERROR]', error);
     return res.status(502).json({
-      error: 'LDAP-Suche ist derzeit nicht erreichbar.',
+      error: 'Die LDAP-Suche ist derzeit nicht erreichbar.',
     });
   }
 });
@@ -124,7 +124,7 @@ router.get('/users', requireAuth, requireActivated, async (_req, res) => {
     return res.json(rows);
   } catch (error) {
     console.error('[DB ERROR] GET /users', error);
-    return res.status(500).json({ error: 'Nutzer konnten nicht geladen werden.' });
+    return res.status(500).json({ error: 'Die Nutzer konnten nicht geladen werden.' });
   }
 });
 
@@ -132,7 +132,7 @@ router.post('/users/resolve-ldap', requireAuth, requireActivated, async (req, re
   const username = normalizeUsername(req.body?.username);
 
   if (!username) {
-    return res.status(400).json({ error: 'username ist erforderlich.' });
+    return res.status(400).json({ error: 'Ein Nutzername ist erforderlich.' });
   }
 
   try {
@@ -155,7 +155,7 @@ router.post('/users/resolve-ldap', requireAuth, requireActivated, async (req, re
     return res.status(201).json({ user: rows[0] });
   } catch (error) {
     console.error('[DB ERROR] POST /users/resolve-ldap', error);
-    return res.status(500).json({ error: 'LDAP-Nutzer konnte nicht aufgeloest werden.' });
+    return res.status(500).json({ error: 'Der LDAP-Nutzer konnte nicht aufgel\u00f6st werden.' });
   }
 });
 
@@ -164,11 +164,11 @@ router.patch('/users/:id/role', requireAuth, requireActivated, requireAdmin, asy
   const role = normalizeRole(req.body?.role);
 
   if (!id) {
-    return res.status(400).json({ error: 'Ungueltige Nutzer-ID.' });
+    return res.status(400).json({ error: 'Ung\u00fcltige Nutzer-ID.' });
   }
 
   if (role === null) {
-    return res.status(400).json({ error: 'Rolle muss 0, 1, 2 oder viewer/editor/admin sein.' });
+    return res.status(400).json({ error: 'Die Rolle ist ung\u00fcltig.' });
   }
 
   try {
@@ -178,13 +178,13 @@ router.patch('/users/:id/role', requireAuth, requireActivated, requireAdmin, asy
     );
 
     if (rows.length === 0) {
-      return res.status(404).json({ error: 'Nutzer nicht gefunden.' });
+      return res.status(404).json({ error: 'Der Nutzer konnte nicht gefunden werden.' });
     }
 
     return res.json({ user: rows[0] });
   } catch (error) {
     console.error('[DB ERROR] PATCH /users/:id/role', error);
-    return res.status(500).json({ error: 'Rolle konnte nicht aktualisiert werden.' });
+    return res.status(500).json({ error: 'Die Rolle konnte nicht aktualisiert werden.' });
   }
 });
 
@@ -192,15 +192,15 @@ router.patch('/users/:id/activate', requireAuth, requireActivated, requireAdmin,
   const id = parseUserId(req.params.id);
 
   if (!id) {
-    return res.status(400).json({ error: 'Ungueltige Nutzer-ID.' });
+    return res.status(400).json({ error: 'Ung\u00fcltige Nutzer-ID.' });
   }
 
   if (typeof req.body?.activated !== 'boolean') {
-    return res.status(400).json({ error: 'activated muss true oder false sein.' });
+    return res.status(400).json({ error: 'Der Aktivierungsstatus muss als true oder false \u00fcbergeben werden.' });
   }
 
   if (Number(req.user.id) === id && req.body.activated === false) {
-    return res.status(400).json({ error: 'Du kannst deinen eigenen Account nicht deaktivieren.' });
+    return res.status(400).json({ error: 'Das eigene Konto kann nicht deaktiviert werden.' });
   }
 
   try {
@@ -210,13 +210,13 @@ router.patch('/users/:id/activate', requireAuth, requireActivated, requireAdmin,
     );
 
     if (rows.length === 0) {
-      return res.status(404).json({ error: 'Nutzer nicht gefunden.' });
+      return res.status(404).json({ error: 'Der Nutzer konnte nicht gefunden werden.' });
     }
 
     return res.json({ user: rows[0] });
   } catch (error) {
     console.error('[DB ERROR] PATCH /users/:id/activate', error);
-    return res.status(500).json({ error: 'Aktivierungsstatus konnte nicht aktualisiert werden.' });
+    return res.status(500).json({ error: 'Der Aktivierungsstatus konnte nicht aktualisiert werden.' });
   }
 });
 
@@ -224,24 +224,24 @@ router.delete('/users/:id', requireAuth, requireActivated, requireAdmin, async (
   const id = parseUserId(req.params.id);
 
   if (!id) {
-    return res.status(400).json({ error: 'Ungueltige Nutzer-ID.' });
+    return res.status(400).json({ error: 'Ung\u00fcltige Nutzer-ID.' });
   }
 
   if (Number(req.user.id) === id) {
-    return res.status(400).json({ error: 'Du kannst deinen eigenen Account nicht loeschen.' });
+    return res.status(400).json({ error: 'Das eigene Konto kann nicht gel\u00f6scht werden.' });
   }
 
   try {
     const { rowCount } = await pool.query('DELETE FROM users WHERE id = $1', [id]);
 
     if (rowCount === 0) {
-      return res.status(404).json({ error: 'Nutzer nicht gefunden.' });
+      return res.status(404).json({ error: 'Der Nutzer konnte nicht gefunden werden.' });
     }
 
     return res.json({ deleted: true });
   } catch (error) {
     console.error('[DB ERROR] DELETE /users/:id', error);
-    return res.status(500).json({ error: 'Nutzer konnte nicht geloescht werden.' });
+    return res.status(500).json({ error: 'Der Nutzer konnte nicht gel\u00f6scht werden.' });
   }
 });
 

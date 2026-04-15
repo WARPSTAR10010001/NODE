@@ -186,12 +186,12 @@ router.post('/auth/login', async (req, res) => {
   }
 
   if (!process.env.JWT_SECRET) {
-    return res.status(500).json({ error: 'JWT-Konfiguration fehlt auf dem Server.' });
+    return res.status(500).json({ error: 'Die JWT-Konfiguration fehlt auf dem Server.' });
   }
 
   const ad = createAdClient();
   if (!ad) {
-    return res.status(500).json({ error: 'LDAP-Konfiguration ist unvollstaendig.' });
+    return res.status(500).json({ error: 'Die LDAP-Konfiguration ist unvollst\u00e4ndig.' });
   }
 
   try {
@@ -199,7 +199,7 @@ router.post('/auth/login', async (req, res) => {
 
     if (!authenticated) {
       clearJwtCookie(res);
-      return res.status(401).json({ error: 'Ungueltiger Nutzername oder Passwort.' });
+      return res.status(401).json({ error: 'Ung\u00fcltiger Nutzername und/oder Passwort.' });
     }
 
     let adGuid = username.toLowerCase();
@@ -234,10 +234,10 @@ router.post('/auth/login', async (req, res) => {
     clearJwtCookie(res);
 
     if (isLikelyInvalidCredentials(error)) {
-      return res.status(401).json({ error: 'Ungueltiger Nutzername oder Passwort.' });
+      return res.status(401).json({ error: 'Ung\u00fcltiger Nutzername und/oder Passwort.' });
     }
 
-    return res.status(502).json({ error: 'LDAP-Anmeldung ist derzeit nicht erreichbar.' });
+    return res.status(502).json({ error: 'Die LDAP-Anmeldung ist derzeit nicht erreichbar. Bitte versuchen Sie es sp\u00e4ter erneut.' });
   }
 });
 
@@ -255,7 +255,7 @@ router.get('/auth/status', async (req, res) => {
 
   if (!process.env.JWT_SECRET) {
     clearJwtCookie(res);
-    return res.status(500).json({ error: 'JWT-Konfiguration fehlt auf dem Server.' });
+    return res.status(500).json({ error: 'Die JWT-Konfiguration fehlt auf dem Server.' });
   }
 
   try {

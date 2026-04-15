@@ -11,4 +11,3 @@ Kerndatenverwaltung Typ Select breiter machen + URL anpassen
 Konto-Schaltfläche verbessern
 Pending-Ansicht verbessern
 Bestätigungs-Overlay
-Umlaute in den Fehlermeldungen (Login)

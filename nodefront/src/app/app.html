@@ -7,7 +7,7 @@
             @if (auth.isLoggedIn()) {
                 @if (auth.loggedRole() === 1) {
                 } @else if (auth.loggedRole() === 2) {
-                <button id="admin" (click)="navigateAdmin()">Adminportal</button>
+                <button id="admin" (click)="navigateAdmin()">Adminpanel</button>
                 }
                 @if (auth.activated() === true) {
                 <button (click)="navigateDashboard()">Dashboard</button>

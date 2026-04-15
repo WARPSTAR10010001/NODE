@@ -234,19 +234,19 @@ function normalizeElectronicTestPayload(body) {
   }
 
   if (hasLastTest && lastTestDate === undefined) {
-    throw new Error('latestTestLastTest muss ein gueltiges Datum sein.');
+    throw new Error('Das letzte Testdatum muss ein gültiges Datum sein.');
   }
 
   if (lastTestResult && !['pass', 'fail'].includes(lastTestResult)) {
-    throw new Error('latestTestResult muss pass oder fail sein.');
+    throw new Error('Das Testresultat muss bestanden oder nicht bestanden sein.');
   }
 
   if (hasScale && !['months', 'years'].includes(scale)) {
-    throw new Error('latestTestScale muss months oder years sein.');
+    throw new Error('Das Testintervall muss in Monaten oder Jahren angegeben werden.');
   }
 
   if (hasNextTestPeriod && (!nextTestPeriod || nextTestPeriod < 1)) {
-    throw new Error('latestTestNextPeriod muss eine positive Zahl sein.');
+    throw new Error('Das Testintervall muss eine positive Zahl sein.');
   }
 
   return {
@@ -267,7 +267,7 @@ async function ensureDepreciationId(body) {
 
   if (!time && !scale) return null;
   if (!time || !['months', 'years'].includes(scale)) {
-    throw new Error('depreciationTime und depreciationScale muessen gueltig sein.');
+    throw new Error('Abschreibungszeit und Abschreibungsintervall müssen gültig sein.');
   }
 
   const existing = await pool.query(
@@ -439,13 +439,13 @@ router.get('/devices', requireAuth, requireActivated, async (req, res) => {
     return res.json({ page, pageSize, total, items: dataResult.rows });
   } catch (error) {
     console.error('[DB ERROR] GET /devices', error);
-    return res.status(500).json({ error: 'Geraete konnten nicht geladen werden.' });
+    return res.status(500).json({ error: 'Die Geräte konnten nicht geladen werden.' });
   }
 });
 
 router.get('/devices/:id', requireAuth, requireActivated, async (req, res) => {
   const id = toInt(req.params.id);
-  if (!id) return res.status(400).json({ error: 'Ungueltige Geraete-ID.' });
+  if (!id) return res.status(400).json({ error: 'Ungültige Geräte-ID.' });
 
   try {
     const { rows } = await pool.query(
@@ -494,11 +494,11 @@ router.get('/devices/:id', requireAuth, requireActivated, async (req, res) => {
       [id]
     );
 
-    if (rows.length === 0) return res.status(404).json({ error: 'Geraet nicht gefunden.' });
+    if (rows.length === 0) return res.status(404).json({ error: 'Das Gerät konnte nicht gefunden werden.' });
     return res.json({ device: rows[0] });
   } catch (error) {
     console.error('[DB ERROR] GET /devices/:id', error);
-    return res.status(500).json({ error: 'Geraet konnte nicht geladen werden.' });
+    return res.status(500).json({ error: 'Das Gerät konnte nicht geladen werden.' });
   }
 });
 
@@ -506,17 +506,17 @@ router.post('/devices', requireAuth, requireActivated, requireEditor, async (req
   const body = req.body || {};
 
   if (!String(body.name || '').trim() || !toInt(body.categoryId) || !toInt(body.statusId)) {
-    return res.status(400).json({ error: 'name, categoryId und statusId sind erforderlich.' });
+    return res.status(400).json({ error: 'Ein Name, eine Kategorie und ein Status sind erforderlich.' });
   }
 
   const macs = normalizeMacArray(body.macAddresses);
   if (macs === undefined && hasOwn(body, 'macAddresses')) {
-    return res.status(400).json({ error: 'macAddresses muss ein Array oder null sein.' });
+    return res.status(400).json({ error: 'Die MAC-Adressen müssen gültig sein.' });
   }
 
   const purchaseDate = toDate(body.purchase);
   if (purchaseDate === undefined) {
-    return res.status(400).json({ error: 'purchase muss ein gueltiges Datum sein.' });
+    return res.status(400).json({ error: 'Das Kaufdatum muss ein gültiges Datum sein.' });
   }
 
   try {
@@ -601,7 +601,7 @@ router.post('/devices', requireAuth, requireActivated, requireEditor, async (req
       }
 
       if (!insertedDevice) {
-        throw lastInsertError || new Error('Inventarnummer konnte nicht eindeutig erzeugt werden.');
+        throw lastInsertError || new Error('Die Inventarnummer konnte nicht eindeutig erzeugt werden.');
       }
 
       if (electronicTest) {
@@ -639,7 +639,7 @@ router.post('/devices', requireAuth, requireActivated, requireEditor, async (req
   } catch (error) {
     console.error('[DB ERROR] POST /devices', error);
     if (error.code === '23505') {
-      return res.status(409).json({ error: 'Generierte Inventarnummer existiert bereits. Bitte erneut versuchen.' });
+      return res.status(409).json({ error: 'Die generierte Inventarnummer existiert bereits. Bitte erneut versuchen.' });
     }
     if (
       String(error.message || '').includes('depreciationTime')
@@ -648,13 +648,13 @@ router.post('/devices', requireAuth, requireActivated, requireEditor, async (req
     ) {
       return res.status(400).json({ error: String(error.message) });
     }
-    return res.status(500).json({ error: 'Geraet konnte nicht gespeichert werden.' });
+    return res.status(500).json({ error: 'Das Gerät konnte nicht gespeichert werden.' });
   }
 });
 
 router.patch('/devices/:id', requireAuth, requireActivated, requireEditor, async (req, res) => {
   const id = toInt(req.params.id);
-  if (!id) return res.status(400).json({ error: 'Ungueltige Geraete-ID.' });
+  if (!id) return res.status(400).json({ error: 'Ung\u00fcltige Ger\u00e4te-ID.' });
 
   const body = req.body || {};
   let derivedDepreciationId;
@@ -688,7 +688,7 @@ router.patch('/devices/:id', requireAuth, requireActivated, requireEditor, async
       label: 'Kaufdatum',
       transform: (value) => {
         const date = toDate(value);
-        if (date === undefined) throw new Error('purchase muss ein gueltiges Datum sein.');
+        if (date === undefined) throw new Error('Das Kaufdatum muss ein gültiges Datum sein.');
         return date;
       }
     },
@@ -733,7 +733,7 @@ router.patch('/devices/:id', requireAuth, requireActivated, requireEditor, async
       label: 'MAC-Adressen',
       transform: (value) => {
         const macs = normalizeMacArray(value);
-        if (macs === undefined) throw new Error('macAddresses muss ein Array oder null sein.');
+        if (macs === undefined) throw new Error('Die MAC-Adressen müssen gültig sein.');
         return macs;
       }
     },
@@ -757,7 +757,7 @@ router.patch('/devices/:id', requireAuth, requireActivated, requireEditor, async
     const existingResult = await client.query('SELECT * FROM devices WHERE id = $1 LIMIT 1', [id]);
     if (existingResult.rows.length === 0) {
       await client.query('ROLLBACK');
-      return res.status(404).json({ error: 'Geraet nicht gefunden.' });
+      return res.status(404).json({ error: 'Das Gerät konnte nicht gefunden werden.' });
     }
 
     const existingDevice = existingResult.rows[0];
@@ -812,7 +812,7 @@ router.patch('/devices/:id', requireAuth, requireActivated, requireEditor, async
   } catch (error) {
     await client.query('ROLLBACK');
     console.error('[DB ERROR] PATCH /devices/:id', error);
-    return res.status(500).json({ error: 'Geraet konnte nicht aktualisiert werden.' });
+    return res.status(500).json({ error: 'Das Gerät konnte nicht aktualisiert werden.' });
   } finally {
     client.release();
   }
@@ -820,7 +820,7 @@ router.patch('/devices/:id', requireAuth, requireActivated, requireEditor, async
 
 router.delete('/devices/:id', requireAuth, requireActivated, requireEditor, async (req, res) => {
   const id = toInt(req.params.id);
-  if (!id) return res.status(400).json({ error: 'Ungueltige Geraete-ID.' });
+  if (!id) return res.status(400).json({ error: 'Ung\u00fcltige Ger\u00e4te-ID.' });
 
   const client = await pool.connect();
 
@@ -839,7 +839,7 @@ router.delete('/devices/:id', requireAuth, requireActivated, requireEditor, asyn
 
     if (rowCount === 0) {
       await client.query('ROLLBACK');
-      return res.status(404).json({ error: 'Geraet nicht gefunden.' });
+      return res.status(404).json({ error: 'Das Gerät konnte nicht gefunden werden.' });
     }
 
     await client.query('COMMIT');
@@ -847,7 +847,7 @@ router.delete('/devices/:id', requireAuth, requireActivated, requireEditor, asyn
   } catch (error) {
     await client.query('ROLLBACK');
     console.error('[DB ERROR] DELETE /devices/:id', error);
-    return res.status(500).json({ error: 'Geraet konnte nicht geloescht werden.' });
+    return res.status(500).json({ error: 'Das Gerät konnte nicht gelöscht werden.' });
   } finally {
     client.release();
   }
@@ -855,7 +855,7 @@ router.delete('/devices/:id', requireAuth, requireActivated, requireEditor, asyn
 
 router.get('/devices/:id/electronic-tests', requireAuth, requireActivated, async (req, res) => {
   const deviceId = toInt(req.params.id);
-  if (!deviceId) return res.status(400).json({ error: 'Ungueltige Geraete-ID.' });
+  if (!deviceId) return res.status(400).json({ error: 'Ungültige Geräte-ID.' });
 
   try {
     const { rows } = await pool.query(
@@ -877,7 +877,7 @@ router.get('/devices/:id/electronic-tests', requireAuth, requireActivated, async
     return res.json({ items: rows });
   } catch (error) {
     console.error('[DB ERROR] GET /devices/:id/electronic-tests', error);
-    return res.status(500).json({ error: 'Pruefungen konnten nicht geladen werden.' });
+    return res.status(500).json({ error: 'Die Prüfungen konnten nicht geladen werden.' });
   }
 });
 
@@ -885,7 +885,7 @@ router.get('/devices/:inventoryNumber/logs', requireAuth, requireActivated, asyn
   const inventoryNumber = String(req.params.inventoryNumber || '').trim();
 
   if (!inventoryNumber) {
-    return res.status(400).json({ error: 'Ungueltige Inventarnummer.' });
+    return res.status(400).json({ error: 'Ungültige Inventarnummer.' });
   }
 
   try {
@@ -905,36 +905,36 @@ router.get('/devices/:inventoryNumber/logs', requireAuth, requireActivated, asyn
     return res.json({ items: rows });
   } catch (error) {
     console.error('[DB ERROR] GET /devices/:inventoryNumber/logs', error);
-    return res.status(500).json({ error: 'Aenderungsprotokoll konnte nicht geladen werden.' });
+    return res.status(500).json({ error: 'Das Änderungsprotokoll konnte nicht geladen werden.' });
   }
 });
 
 router.post('/devices/:id/electronic-tests', requireAuth, requireActivated, requireEditor, async (req, res) => {
   const deviceId = toInt(req.params.id);
-  if (!deviceId) return res.status(400).json({ error: 'Ungueltige Geraete-ID.' });
+  if (!deviceId) return res.status(400).json({ error: 'Ungültige Geräte-ID.' });
 
   const body = req.body || {};
   if (!body.tester || !body.lastTest || !body.lastTestResult || body.nextTestPeriod === undefined || !body.scale) {
     return res.status(400).json({
-      error: 'tester, lastTest, lastTestResult, nextTestPeriod und scale sind erforderlich.',
+      error: 'Ein Tester, das letzte Testdatum, das letzte Testresultat und das nächste Testintervall sind erforderlich.',
     });
   }
 
   if (!['pass', 'fail'].includes(String(body.lastTestResult))) {
-    return res.status(400).json({ error: 'lastTestResult muss pass oder fail sein.' });
+    return res.status(400).json({ error: 'Das Testresultat muss bestanden oder nicht bestanden sein.' });
   }
   if (!['months', 'years'].includes(String(body.scale))) {
-    return res.status(400).json({ error: 'scale muss months oder years sein.' });
+    return res.status(400).json({ error: 'Das Testintervall muss in Monaten oder Jahren angegeben werden.' });
   }
 
   const nextTestPeriod = toInt(body.nextTestPeriod);
   if (!nextTestPeriod || nextTestPeriod < 1) {
-    return res.status(400).json({ error: 'nextTestPeriod muss eine positive Zahl sein.' });
+    return res.status(400).json({ error: 'Das Testintervall muss eine positive Zahl sein.' });
   }
 
   const lastTestDate = toDate(body.lastTest);
   if (lastTestDate === undefined) {
-    return res.status(400).json({ error: 'lastTest muss ein gueltiges Datum sein.' });
+    return res.status(400).json({ error: 'Das Testdatum muss ein gültiges Datum sein.' });
   }
 
   const client = await pool.connect();
@@ -949,7 +949,7 @@ router.post('/devices/:id/electronic-tests', requireAuth, requireActivated, requ
 
     if (deviceResult.rows.length === 0) {
       await client.query('ROLLBACK');
-      return res.status(404).json({ error: 'Geraet nicht gefunden.' });
+      return res.status(404).json({ error: 'Das Ger\u00e4t konnte nicht gefunden werden.' });
     }
 
     const { rows } = await client.query(
@@ -1001,7 +1001,7 @@ router.post('/devices/:id/electronic-tests', requireAuth, requireActivated, requ
   } catch (error) {
     await client.query('ROLLBACK');
     console.error('[DB ERROR] POST /devices/:id/electronic-tests', error);
-    return res.status(500).json({ error: 'Pruefung konnte nicht gespeichert werden.' });
+    return res.status(500).json({ error: 'Die Prüfung konnte nicht gespeichert werden.' });
   } finally {
     client.release();
   }
@@ -1009,7 +1009,7 @@ router.post('/devices/:id/electronic-tests', requireAuth, requireActivated, requ
 
 router.patch('/electronic-tests/:testId', requireAuth, requireActivated, requireEditor, async (req, res) => {
   const testId = toInt(req.params.testId);
-  if (!testId) return res.status(400).json({ error: 'Ungueltige Test-ID.' });
+  if (!testId) return res.status(400).json({ error: 'Ungültige Test-ID.' });
 
   const body = req.body || {};
   const sets = [];
@@ -1030,7 +1030,7 @@ router.patch('/electronic-tests/:testId', requireAuth, requireActivated, require
       label: 'Letzter Test',
       transform: (value) => {
         const date = toDate(value);
-        if (date === undefined) throw new Error('lastTest muss ein gueltiges Datum sein.');
+        if (date === undefined) throw new Error('Das Testdatum muss ein gültiges Datum sein.');
         return date;
       }
     },
@@ -1070,7 +1070,7 @@ router.patch('/electronic-tests/:testId', requireAuth, requireActivated, require
 
     if (existingResult.rows.length === 0) {
       await client.query('ROLLBACK');
-      return res.status(404).json({ error: 'Pruefung nicht gefunden.' });
+      return res.status(404).json({ error: 'Die Prüfung konnte nicht gefunden werden.' });
     }
 
     const existingTest = existingResult.rows[0];
@@ -1079,10 +1079,10 @@ router.patch('/electronic-tests/:testId', requireAuth, requireActivated, require
       if (!hasOwn(body, key)) continue;
 
       if (key === 'lastTestResult' && body[key] !== null && !['pass', 'fail'].includes(String(body[key]))) {
-        return res.status(400).json({ error: 'lastTestResult muss pass oder fail sein.' });
+        return res.status(400).json({ error: 'Das Testresultat muss bestanden oder nicht bestanden sein.' });
       }
       if (key === 'scale' && body[key] !== null && !['months', 'years'].includes(String(body[key]))) {
-        return res.status(400).json({ error: 'scale muss months oder years sein.' });
+        return res.status(400).json({ error: 'Das Testintervall muss in Monaten oder Jahren angegeben werden.' });
       }
 
       const value = allowed[key].transform(body[key]);
@@ -1142,7 +1142,7 @@ router.patch('/electronic-tests/:testId', requireAuth, requireActivated, require
   } catch (error) {
     await client.query('ROLLBACK');
     console.error('[DB ERROR] PATCH /electronic-tests/:testId', error);
-    return res.status(500).json({ error: 'Pruefung konnte nicht aktualisiert werden.' });
+    return res.status(500).json({ error: 'Die Prüfung konnte nicht aktualisiert werden.' });
   } finally {
     client.release();
   }
@@ -1150,18 +1150,18 @@ router.patch('/electronic-tests/:testId', requireAuth, requireActivated, require
 
 router.delete('/electronic-tests/:testId', requireAuth, requireActivated, requireAdmin, async (req, res) => {
   const testId = toInt(req.params.testId);
-  if (!testId) return res.status(400).json({ error: 'Ungueltige Test-ID.' });
+  if (!testId) return res.status(400).json({ error: 'Ungültige Test-ID.' });
 
   try {
     const { rowCount } = await pool.query(
       'DELETE FROM electronic_tests WHERE id = $1',
       [testId]
     );
-    if (rowCount === 0) return res.status(404).json({ error: 'Pruefung nicht gefunden.' });
+    if (rowCount === 0) return res.status(404).json({ error: 'Die Pr\u00fcfung konnte nicht gefunden werden.' });
     return res.json({ deleted: true });
   } catch (error) {
     console.error('[DB ERROR] DELETE /electronic-tests/:testId', error);
-    return res.status(500).json({ error: 'Pruefung konnte nicht geloescht werden.' });
+    return res.status(500).json({ error: 'Die Prüfung konnte nicht gelöscht werden.' });
   }
 });
 

@@ -26,7 +26,7 @@ function handleLookupMutationError(error, res, messages) {
   }
 
   if (error?.code === '23503') {
-    return res.status(409).json({ error: 'Eintrag kann nicht gelöscht werden, weil er Geräten zugewiesen ist.' });
+    return res.status(409).json({ error: 'Der Eintrag kann nicht gel\u00f6scht werden, weil er Ger\u00e4ten zugewiesen ist.' });
   }
 
   return res.status(500).json({ error: messages.generic });
@@ -38,7 +38,7 @@ async function handleGet(table, key, orderBy, res) {
     return res.json({ [key]: rows });
   } catch (error) {
     console.error(`[DB ERROR] GET /${table}`, error);
-    return res.status(500).json({ error: 'Stammdaten konnten nicht geladen werden.' });
+    return res.status(500).json({ error: 'Die Stammdaten konnten nicht geladen werden.' });
   }
 }
 
@@ -51,7 +51,7 @@ router.post('/categories', requireAuth, requireActivated, requireEditor, async (
   const description = normalizeText(req.body?.description) || '';
 
   if (!name) {
-    return res.status(400).json({ error: 'name ist erforderlich.' });
+    return res.status(400).json({ error: 'Ein Name ist erforderlich.' });
   }
 
   try {
@@ -63,15 +63,15 @@ router.post('/categories', requireAuth, requireActivated, requireEditor, async (
   } catch (error) {
     console.error('[DB ERROR] POST /categories', error);
     return handleLookupMutationError(error, res, {
-      duplicate: 'Kategorie existiert bereits.',
-      generic: 'Kategorie konnte nicht gespeichert werden.'
+      duplicate: 'Die Kategorie existiert bereits.',
+      generic: 'Die Kategorie konnte nicht gespeichert werden.'
     });
   }
 });
 
 router.patch('/categories/:id', requireAuth, requireActivated, requireEditor, async (req, res) => {
   const id = parseId(req.params.id);
-  if (!id) return res.status(400).json({ error: 'Ungueltige Kategorien-ID.' });
+  if (!id) return res.status(400).json({ error: 'Ung\u00fcltige Kategorien-ID.' });
 
   const name = req.body && Object.prototype.hasOwnProperty.call(req.body, 'name')
     ? normalizeText(req.body.name)
@@ -81,7 +81,7 @@ router.patch('/categories/:id', requireAuth, requireActivated, requireEditor, as
     : undefined;
 
   if (name === undefined && description === undefined) {
-    return res.status(400).json({ error: 'Keine Felder zum Aktualisieren uebergeben.' });
+    return res.status(400).json({ error: 'Es wurden keine Felder zum Aktualisieren \u00fcbergeben.' });
   }
 
   try {
@@ -89,30 +89,30 @@ router.patch('/categories/:id', requireAuth, requireActivated, requireEditor, as
       'UPDATE categories SET name = COALESCE($1, name), description = COALESCE($2, description) WHERE id = $3 RETURNING *',
       [name, description, id]
     );
-    if (rows.length === 0) return res.status(404).json({ error: 'Kategorie nicht gefunden.' });
+    if (rows.length === 0) return res.status(404).json({ error: 'Die Kategorie konnte nicht gefunden werden.' });
     return res.json({ category: rows[0] });
   } catch (error) {
     console.error('[DB ERROR] PATCH /categories/:id', error);
     return handleLookupMutationError(error, res, {
-      duplicate: 'Kategorie existiert bereits.',
-      generic: 'Kategorie konnte nicht aktualisiert werden.'
+      duplicate: 'Die Kategorie existiert bereits.',
+      generic: 'Die Kategorie konnte nicht aktualisiert werden.'
     });
   }
 });
 
 router.delete('/categories/:id', requireAuth, requireActivated, requireAdmin, async (req, res) => {
   const id = parseId(req.params.id);
-  if (!id) return res.status(400).json({ error: 'Ungueltige Kategorien-ID.' });
+  if (!id) return res.status(400).json({ error: 'Ung\u00fcltige Kategorien-ID.' });
 
   try {
     const { rowCount } = await pool.query('DELETE FROM categories WHERE id = $1', [id]);
-    if (rowCount === 0) return res.status(404).json({ error: 'Kategorie nicht gefunden.' });
+    if (rowCount === 0) return res.status(404).json({ error: 'Die Kategorie konnte nicht gefunden werden.' });
     return res.json({ deleted: true });
   } catch (error) {
     console.error('[DB ERROR] DELETE /categories/:id', error);
     return handleLookupMutationError(error, res, {
-      duplicate: 'Kategorie existiert bereits.',
-      generic: 'Kategorie konnte nicht geloescht werden.'
+      duplicate: 'Die Kategorie existiert bereits.',
+      generic: 'Die Kategorie konnte nicht gel\u00f6scht werden.'
     });
   }
 });
@@ -126,7 +126,7 @@ router.post('/statuses', requireAuth, requireActivated, requireEditor, async (re
   const description = normalizeText(req.body?.description) || '';
 
   if (!name) {
-    return res.status(400).json({ error: 'name ist erforderlich.' });
+    return res.status(400).json({ error: 'Ein Name ist erforderlich.' });
   }
 
   try {
@@ -138,15 +138,15 @@ router.post('/statuses', requireAuth, requireActivated, requireEditor, async (re
   } catch (error) {
     console.error('[DB ERROR] POST /statuses', error);
     return handleLookupMutationError(error, res, {
-      duplicate: 'Status existiert bereits.',
-      generic: 'Status konnte nicht gespeichert werden.'
+      duplicate: 'Der Status existiert bereits.',
+      generic: 'Der Status konnte nicht gespeichert werden.'
     });
   }
 });
 
 router.patch('/statuses/:id', requireAuth, requireActivated, requireEditor, async (req, res) => {
   const id = parseId(req.params.id);
-  if (!id) return res.status(400).json({ error: 'Ungueltige Status-ID.' });
+  if (!id) return res.status(400).json({ error: 'Ung\u00fcltige Status-ID.' });
 
   const name = req.body && Object.prototype.hasOwnProperty.call(req.body, 'name')
     ? normalizeText(req.body.name)
@@ -156,7 +156,7 @@ router.patch('/statuses/:id', requireAuth, requireActivated, requireEditor, asyn
     : undefined;
 
   if (name === undefined && description === undefined) {
-    return res.status(400).json({ error: 'Keine Felder zum Aktualisieren uebergeben.' });
+    return res.status(400).json({ error: 'Es wurden keine Felder zum Aktualisieren \u00fcbergeben.' });
   }
 
   try {
@@ -164,30 +164,30 @@ router.patch('/statuses/:id', requireAuth, requireActivated, requireEditor, asyn
       'UPDATE statuses SET name = COALESCE($1, name), description = COALESCE($2, description) WHERE id = $3 RETURNING *',
       [name, description, id]
     );
-    if (rows.length === 0) return res.status(404).json({ error: 'Status nicht gefunden.' });
+    if (rows.length === 0) return res.status(404).json({ error: 'Der Status konnte nicht gefunden werden.' });
     return res.json({ status: rows[0] });
   } catch (error) {
     console.error('[DB ERROR] PATCH /statuses/:id', error);
     return handleLookupMutationError(error, res, {
-      duplicate: 'Status existiert bereits.',
-      generic: 'Status konnte nicht aktualisiert werden.'
+      duplicate: 'Der Status existiert bereits.',
+      generic: 'Der Status konnte nicht aktualisiert werden.'
     });
   }
 });
 
 router.delete('/statuses/:id', requireAuth, requireActivated, requireAdmin, async (req, res) => {
   const id = parseId(req.params.id);
-  if (!id) return res.status(400).json({ error: 'Ungueltige Status-ID.' });
+  if (!id) return res.status(400).json({ error: 'Ung\u00fcltige Status-ID.' });
 
   try {
     const { rowCount } = await pool.query('DELETE FROM statuses WHERE id = $1', [id]);
-    if (rowCount === 0) return res.status(404).json({ error: 'Status nicht gefunden.' });
+    if (rowCount === 0) return res.status(404).json({ error: 'Der Status konnte nicht gefunden werden.' });
     return res.json({ deleted: true });
   } catch (error) {
     console.error('[DB ERROR] DELETE /statuses/:id', error);
     return handleLookupMutationError(error, res, {
-      duplicate: 'Status existiert bereits.',
-      generic: 'Status konnte nicht geloescht werden.'
+      duplicate: 'Der Status existiert bereits.',
+      generic: 'Der Status konnte nicht gel\u00f6scht werden.'
     });
   }
 });
@@ -198,7 +198,7 @@ router.get('/locations', requireAuth, requireActivated, async (_req, res) => {
     return res.json({ locations: rows });
   } catch (error) {
     console.error('[DB ERROR] GET /locations', error);
-    return res.status(500).json({ error: 'Standorte konnten nicht geladen werden.' });
+    return res.status(500).json({ error: 'Die Standorte konnten nicht geladen werden.' });
   }
 });
 
@@ -209,7 +209,7 @@ router.post('/locations', requireAuth, requireActivated, requireEditor, async (r
   const room = normalizeText(req.body?.room);
 
   if (!city || !address) {
-    return res.status(400).json({ error: 'city und address sind erforderlich.' });
+    return res.status(400).json({ error: 'Stadt und Adresse sind erforderlich.' });
   }
 
   try {
@@ -221,15 +221,15 @@ router.post('/locations', requireAuth, requireActivated, requireEditor, async (r
   } catch (error) {
     console.error('[DB ERROR] POST /locations', error);
     return handleLookupMutationError(error, res, {
-      duplicate: 'Standort existiert bereits.',
-      generic: 'Standort konnte nicht gespeichert werden.'
+      duplicate: 'Der Standort existiert bereits.',
+      generic: 'Der Standort konnte nicht gespeichert werden.'
     });
   }
 });
 
 router.patch('/locations/:id', requireAuth, requireActivated, requireEditor, async (req, res) => {
   const id = parseId(req.params.id);
-  if (!id) return res.status(400).json({ error: 'Ungueltige Standort-ID.' });
+  if (!id) return res.status(400).json({ error: 'Ung\u00fcltige Standort-ID.' });
 
   const city = req.body && Object.prototype.hasOwnProperty.call(req.body, 'city')
     ? normalizeText(req.body.city)
@@ -245,7 +245,7 @@ router.patch('/locations/:id', requireAuth, requireActivated, requireEditor, asy
     : undefined;
 
   if (city === undefined && address === undefined && houseNumber === undefined && room === undefined) {
-    return res.status(400).json({ error: 'Keine Felder zum Aktualisieren uebergeben.' });
+    return res.status(400).json({ error: 'Es wurden keine Felder zum Aktualisieren \u00fcbergeben.' });
   }
 
   try {
@@ -253,30 +253,30 @@ router.patch('/locations/:id', requireAuth, requireActivated, requireEditor, asy
       'UPDATE locations SET city = COALESCE($1, city), address = COALESCE($2, address), "houseNumber" = COALESCE($3, "houseNumber"), room = COALESCE($4, room) WHERE id = $5 RETURNING *',
       [city, address, houseNumber, room, id]
     );
-    if (rows.length === 0) return res.status(404).json({ error: 'Standort nicht gefunden.' });
+    if (rows.length === 0) return res.status(404).json({ error: 'Der Standort konnte nicht gefunden werden.' });
     return res.json({ location: rows[0] });
   } catch (error) {
     console.error('[DB ERROR] PATCH /locations/:id', error);
     return handleLookupMutationError(error, res, {
-      duplicate: 'Standort existiert bereits.',
-      generic: 'Standort konnte nicht aktualisiert werden.'
+      duplicate: 'Der Standort existiert bereits.',
+      generic: 'Der Standort konnte nicht aktualisiert werden.'
     });
   }
 });
 
 router.delete('/locations/:id', requireAuth, requireActivated, requireAdmin, async (req, res) => {
   const id = parseId(req.params.id);
-  if (!id) return res.status(400).json({ error: 'Ungueltige Standort-ID.' });
+  if (!id) return res.status(400).json({ error: 'Ung\u00fcltige Standort-ID.' });
 
   try {
     const { rowCount } = await pool.query('DELETE FROM locations WHERE id = $1', [id]);
-    if (rowCount === 0) return res.status(404).json({ error: 'Standort nicht gefunden.' });
+    if (rowCount === 0) return res.status(404).json({ error: 'Der Standort konnte nicht gefunden werden.' });
     return res.json({ deleted: true });
   } catch (error) {
     console.error('[DB ERROR] DELETE /locations/:id', error);
     return handleLookupMutationError(error, res, {
-      duplicate: 'Standort existiert bereits.',
-      generic: 'Standort konnte nicht geloescht werden.'
+      duplicate: 'Der Standort existiert bereits.',
+      generic: 'Der Standort konnte nicht gel\u00f6scht werden.'
     });
   }
 });
@@ -287,7 +287,7 @@ router.get('/depreciations', requireAuth, requireActivated, async (_req, res) =>
     return res.json({ depreciations: rows });
   } catch (error) {
     console.error('[DB ERROR] GET /depreciations', error);
-    return res.status(500).json({ error: 'Abschreibungen konnten nicht geladen werden.' });
+    return res.status(500).json({ error: 'Die Abschreibungen konnten nicht geladen werden.' });
   }
 });
 
@@ -297,7 +297,7 @@ router.get('/network-environments', requireAuth, requireActivated, async (_req, 
     return res.json({ networkEnvironments: rows, network_environments: rows });
   } catch (error) {
     console.error('[DB ERROR] GET /network-environments', error);
-    return res.status(500).json({ error: 'Netzwerkumgebungen konnten nicht geladen werden.' });
+    return res.status(500).json({ error: 'Die Netzwerkumgebungen konnten nicht geladen werden.' });
   }
 });
 
@@ -305,7 +305,7 @@ router.post('/network-environments', requireAuth, requireActivated, requireEdito
   const name = normalizeText(req.body?.name);
 
   if (!name) {
-    return res.status(400).json({ error: 'name ist erforderlich.' });
+    return res.status(400).json({ error: 'Ein Name ist erforderlich.' });
   }
 
   try {
@@ -317,22 +317,22 @@ router.post('/network-environments', requireAuth, requireActivated, requireEdito
   } catch (error) {
     console.error('[DB ERROR] POST /network-environments', error);
     return handleLookupMutationError(error, res, {
-      duplicate: 'Netzwerkumgebung existiert bereits.',
-      generic: 'Netzwerkumgebung konnte nicht gespeichert werden.'
+      duplicate: 'Die Netzwerkumgebung existiert bereits.',
+      generic: 'Die Netzwerkumgebung konnte nicht gespeichert werden.'
     });
   }
 });
 
 router.patch('/network-environments/:id', requireAuth, requireActivated, requireEditor, async (req, res) => {
   const id = parseId(req.params.id);
-  if (!id) return res.status(400).json({ error: 'Ungueltige Netzwerkumgebungs-ID.' });
+  if (!id) return res.status(400).json({ error: 'Ung\u00fcltige Netzwerkumgebungs-ID.' });
 
   const name = req.body && Object.prototype.hasOwnProperty.call(req.body, 'name')
     ? normalizeText(req.body.name)
     : undefined;
 
   if (name === undefined) {
-    return res.status(400).json({ error: 'Keine Felder zum Aktualisieren uebergeben.' });
+    return res.status(400).json({ error: 'Es wurden keine Felder zum Aktualisieren \u00fcbergeben.' });
   }
 
   try {
@@ -340,30 +340,30 @@ router.patch('/network-environments/:id', requireAuth, requireActivated, require
       'UPDATE network_environments SET name = COALESCE($1, name) WHERE id = $2 RETURNING *',
       [name, id]
     );
-    if (rows.length === 0) return res.status(404).json({ error: 'Netzwerkumgebung nicht gefunden.' });
+    if (rows.length === 0) return res.status(404).json({ error: 'Die Netzwerkumgebung konnte nicht gefunden werden.' });
     return res.json({ networkEnvironment: rows[0] });
   } catch (error) {
     console.error('[DB ERROR] PATCH /network-environments/:id', error);
     return handleLookupMutationError(error, res, {
-      duplicate: 'Netzwerkumgebung existiert bereits.',
-      generic: 'Netzwerkumgebung konnte nicht aktualisiert werden.'
+      duplicate: 'Die Netzwerkumgebung existiert bereits.',
+      generic: 'Die Netzwerkumgebung konnte nicht aktualisiert werden.'
     });
   }
 });
 
 router.delete('/network-environments/:id', requireAuth, requireActivated, requireAdmin, async (req, res) => {
   const id = parseId(req.params.id);
-  if (!id) return res.status(400).json({ error: 'Ungueltige Netzwerkumgebungs-ID.' });
+  if (!id) return res.status(400).json({ error: 'Ung\u00fcltige Netzwerkumgebungs-ID.' });
 
   try {
     const { rowCount } = await pool.query('DELETE FROM network_environments WHERE id = $1', [id]);
-    if (rowCount === 0) return res.status(404).json({ error: 'Netzwerkumgebung nicht gefunden.' });
+    if (rowCount === 0) return res.status(404).json({ error: 'Die Netzwerkumgebung konnte nicht gefunden werden.' });
     return res.json({ deleted: true });
   } catch (error) {
     console.error('[DB ERROR] DELETE /network-environments/:id', error);
     return handleLookupMutationError(error, res, {
-      duplicate: 'Netzwerkumgebung existiert bereits.',
-      generic: 'Netzwerkumgebung konnte nicht geloescht werden.'
+      duplicate: 'Die Netzwerkumgebung existiert bereits.',
+      generic: 'Die Netzwerkumgebung konnte nicht gel\u00f6scht werden.'
     });
   }
 });
