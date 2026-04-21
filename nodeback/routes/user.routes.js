@@ -136,26 +136,46 @@ router.post('/users/resolve-ldap', requireAuth, requireActivated, async (req, re
   }
 
   try {
+    let userRecord;
     const existing = await pool.query(
       'SELECT id, "adGuid", username, role, "isActivated", "createdAt", "lastLogin", "previouslyLoggedIn" FROM users WHERE LOWER(username) = LOWER($1) LIMIT 1',
       [username]
     );
 
     if (existing.rows.length > 0) {
-      return res.json({ user: existing.rows[0] });
+      userRecord = existing.rows[0];
+    } else {
+      const { rows } = await pool.query(
+        `INSERT INTO users ("adGuid", username, role, "createdAt", "lastLogin", "isActivated", "previouslyLoggedIn")
+         VALUES ($1, $2, 0, NOW(), NOW(), FALSE, FALSE)
+         RETURNING id, "adGuid", username, role, "isActivated", "createdAt", "lastLogin", "previouslyLoggedIn"`,
+        [username, username]
+      );
+      userRecord = rows[0];
     }
 
-    const { rows } = await pool.query(
-      `INSERT INTO users ("adGuid", username, role, "createdAt", "lastLogin", "isActivated", "previouslyLoggedIn")
-       VALUES ($1, $2, 0, NOW(), NOW(), FALSE, FALSE)
-       RETURNING id, "adGuid", username, role, "isActivated", "createdAt", "lastLogin", "previouslyLoggedIn"`,
-      [username, username]
-    );
+    const ad = getAdClient();
+    if (ad) {
+      try {
+        const ldapResults = await ldapSearchUsers(ad, username);
+        const adUser = ldapResults.find(u =>
+          u.sAMAccountName?.toLowerCase() === username.toLowerCase() ||
+          u.userPrincipalName?.toLowerCase() === username.toLowerCase()
+        );
 
-    return res.status(201).json({ user: rows[0] });
+        if (adUser) {
+          userRecord.displayName = adUser.displayName || `${adUser.givenName} ${adUser.sn}`.trim();
+          userRecord.email = adUser.mail;
+        }
+      } catch (ldapErr) {
+        console.error('[LDAP RESOLVE ERROR]', ldapErr);
+      }
+    }
+
+    return res.json({ user: userRecord });
   } catch (error) {
     console.error('[DB ERROR] POST /users/resolve-ldap', error);
-    return res.status(500).json({ error: 'Der LDAP-Nutzer konnte nicht aufgel\u00f6st werden.' });
+    return res.status(500).json({ error: 'Fehler bei der Nutzerauflösung.' });
   }
 });
 

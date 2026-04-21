@@ -50,11 +50,12 @@
 
 .quicklink-card hr {
     width: 100%;
-    margin: 0;
+    margin: -5px;
     border-color: var(--bgc);
 }
 
 .quicklink-card p {
+    margin: 10px 0 0;
     font-size: 0.6em;
     color: var(--bgc);
 }
@@ -107,6 +108,7 @@
 .fact-card p,
 .facts-state p,
 .history-card p {
+    margin: 10px 0 0;
     font-size: 0.6em;
     color: var(--tc);
 }

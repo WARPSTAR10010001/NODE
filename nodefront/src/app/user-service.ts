@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from './environments/environment';
+import { map } from 'rxjs/operators';
 
 export interface LdapUser {
   username: string;
@@ -12,6 +13,7 @@ export interface LdapUser {
 export interface UserRecord {
   id: number;
   username: string;
+  displayName?: string;
   role: number;
   isActivated: boolean;
   previouslyLoggedIn: boolean;

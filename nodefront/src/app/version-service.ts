@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 
 @Injectable({ providedIn: 'root' })
 export class VersionService {
-  private version: string = "0.6.1";
+  private version: string = "0.6.2";
   private summary: string = "MISC";
   private versionKey = 'node_last_logged_version';
 

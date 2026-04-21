@@ -2,9 +2,10 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { forkJoin, of, switchMap } from 'rxjs';
-import { AuthService } from '../auth-service';
+import { AuthService, User } from '../auth-service';
 import { Device, DeviceListResponse, DeviceService } from '../device-service';
 import { OverlayService } from '../overlay-service';
+import { UserService, UserRecord } from '../user-service';
 
 type DashboardLink = {
   label: string;
@@ -33,6 +34,7 @@ const RECENT_DEVICES_STORAGE_KEY = 'node.dashboard.recentDevices';
   templateUrl: './dashboard-component.html',
   styleUrl: './dashboard-component.css',
 })
+
 export class DashboardComponent implements OnInit {
   loading = true;
   error = false;
@@ -40,17 +42,44 @@ export class DashboardComponent implements OnInit {
   allFacts: DashboardFact[] = [];
   facts: DashboardFact[] = [];
   recentDevices: RecentDevice[] = [];
+  userData!: User | null;
+  username = "";
+  resolvable = false;
 
   constructor(
     public auth: AuthService,
     private deviceService: DeviceService,
-    private overlay: OverlayService
-  ) {}
+    private overlay: OverlayService,
+    private user: UserService
+  ) { }
 
   ngOnInit(): void {
     this.buildQuickLinks();
     this.loadRecentDevices();
     this.loadFacts();
+
+    this.userData = this.auth.user;
+    if (this.userData) {
+      this.username = this.userData.username;
+      this.tryResolve(this.userData);
+    }
+  }
+
+  tryResolve(userData: User): void {
+    this.user.resolveLdapUser(userData.username).subscribe({
+      next: (response) => {
+        if (response && response.user) {
+          this.username = response.user.displayName || response.user.username;
+          this.resolvable = true;
+          console.log("Erfolgreich aufgelöst:", this.username);
+        }
+      },
+      error: (err) => {
+        console.error("Fehler bei der Namensauflösung:", err);
+        this.username = userData.username;
+        this.resolvable = false;
+      }
+    });
   }
 
   get hasRecentDevices(): boolean {

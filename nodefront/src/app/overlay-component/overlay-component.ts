@@ -32,7 +32,7 @@ export class OverlayComponent implements OnInit {
     private router: Router,
     private auth: AuthService,
     public version: VersionService
-  ) {}
+  ) { }
 
   ngOnInit() {
     this.selectedTheme = this.theme.getTheme();
@@ -165,7 +165,11 @@ export class OverlayComponent implements OnInit {
 
   @HostListener('document:keydown.escape')
   onEscHandler() {
-    this.close();
+    if (this.overlayState.type === "update") {
+      this.closeUpdate();
+    } else {
+      this.close();
+    }
   }
 
   changeTheme(theme: Theme) { this.theme.setTheme(theme); }

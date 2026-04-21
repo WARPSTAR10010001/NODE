@@ -1,7 +1,11 @@
 <div class="dashboard-shell">
     <div class="title">
         <hr>
-        <h1>Willkommen in NODE!</h1>
+        @if (resolvable) {
+        <h1>Willkommen, {{ username }}!</h1>
+        } @else {
+        <h1>Wilkommen in NODE!</h1>
+        }
     </div>
     <section class="dashboard-section">
         <h1>Schnellstart</h1>
