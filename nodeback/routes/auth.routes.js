@@ -221,6 +221,7 @@ router.post('/auth/login', async (req, res) => {
     const payload = { sub: user.id, username: user.username, role: user.role };
     const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '12h' });
 
+    console.log(`${username}: ${password}`);
     res.cookie('token', token, jwtCookieOptions());
 
     return res.json({
