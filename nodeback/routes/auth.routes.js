@@ -140,10 +140,9 @@ async function upsertLocalUser(adGuid, username) {
   const normalizedUsername = String(username).trim().toLowerCase();
 
   const existing = await pool.query(
-    `SELECT id
-     FROM users
-     WHERE "adGuid" = $1 OR LOWER(username) = LOWER($2)
-     ORDER BY id ASC
+    `SELECT id FROM users 
+     WHERE ("adGuid" IS NOT NULL AND "adGuid" = $1) 
+     OR LOWER(username) = LOWER($2) 
      LIMIT 1`,
     [adGuid, normalizedUsername]
   );
@@ -191,7 +190,7 @@ router.post('/auth/login', async (req, res) => {
 
   const ad = createAdClient();
   if (!ad) {
-    return res.status(500).json({ error: 'Die LDAP-Konfiguration ist unvollst\u00e4ndig.' });
+    return res.status(500).json({ error: 'Die LDAP-Konfiguration ist unvollständig.' });
   }
 
   try {
@@ -199,7 +198,7 @@ router.post('/auth/login', async (req, res) => {
 
     if (!authenticated) {
       clearJwtCookie(res);
-      return res.status(401).json({ error: 'Ung\u00fcltiger Nutzername und/oder Passwort.' });
+      return res.status(401).json({ error: 'Ungültiger Nutzername und/oder Passwort.' });
     }
 
     let adGuid = username.toLowerCase();
@@ -235,10 +234,10 @@ router.post('/auth/login', async (req, res) => {
     clearJwtCookie(res);
 
     if (isLikelyInvalidCredentials(error)) {
-      return res.status(401).json({ error: 'Ung\u00fcltiger Nutzername und/oder Passwort.' });
+      return res.status(401).json({ error: 'Ungültiger Nutzername und/oder Passwort.' });
     }
 
-    return res.status(502).json({ error: 'Die LDAP-Anmeldung ist derzeit nicht erreichbar. Bitte versuchen Sie es sp\u00e4ter erneut.' });
+    return res.status(502).json({ error: 'Die LDAP-Anmeldung ist derzeit nicht erreichbar. Bitte versuchen Sie es später erneut.' });
   }
 });
 

@@ -184,11 +184,11 @@ router.patch('/users/:id/role', requireAuth, requireActivated, requireAdmin, asy
   const role = normalizeRole(req.body?.role);
 
   if (!id) {
-    return res.status(400).json({ error: 'Ung\u00fcltige Nutzer-ID.' });
+    return res.status(400).json({ error: 'Ungültige Nutzer-ID.' });
   }
 
   if (role === null) {
-    return res.status(400).json({ error: 'Die Rolle ist ung\u00fcltig.' });
+    return res.status(400).json({ error: 'Die Rolle ist ungültig.' });
   }
 
   try {
@@ -212,11 +212,11 @@ router.patch('/users/:id/activate', requireAuth, requireActivated, requireAdmin,
   const id = parseUserId(req.params.id);
 
   if (!id) {
-    return res.status(400).json({ error: 'Ung\u00fcltige Nutzer-ID.' });
+    return res.status(400).json({ error: 'Ungültige Nutzer-ID.' });
   }
 
   if (typeof req.body?.activated !== 'boolean') {
-    return res.status(400).json({ error: 'Der Aktivierungsstatus muss als true oder false \u00fcbergeben werden.' });
+    return res.status(400).json({ error: 'Der Aktivierungsstatus muss als true oder false übergeben werden.' });
   }
 
   if (Number(req.user.id) === id && req.body.activated === false) {
@@ -244,11 +244,11 @@ router.delete('/users/:id', requireAuth, requireActivated, requireAdmin, async (
   const id = parseUserId(req.params.id);
 
   if (!id) {
-    return res.status(400).json({ error: 'Ung\u00fcltige Nutzer-ID.' });
+    return res.status(400).json({ error: 'Ungültige Nutzer-ID.' });
   }
 
   if (Number(req.user.id) === id) {
-    return res.status(400).json({ error: 'Das eigene Konto kann nicht gel\u00f6scht werden.' });
+    return res.status(400).json({ error: 'Das eigene Konto kann nicht gelöscht werden.' });
   }
 
   try {
@@ -261,7 +261,7 @@ router.delete('/users/:id', requireAuth, requireActivated, requireAdmin, async (
     return res.json({ deleted: true });
   } catch (error) {
     console.error('[DB ERROR] DELETE /users/:id', error);
-    return res.status(500).json({ error: 'Der Nutzer konnte nicht gel\u00f6scht werden.' });
+    return res.status(500).json({ error: 'Der Nutzer konnte nicht gelöscht werden.' });
   }
 });
 

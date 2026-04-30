@@ -26,7 +26,7 @@ function handleLookupMutationError(error, res, messages) {
   }
 
   if (error?.code === '23503') {
-    return res.status(409).json({ error: 'Der Eintrag kann nicht gel\u00f6scht werden, weil er Ger\u00e4ten zugewiesen ist.' });
+    return res.status(409).json({ error: 'Der Eintrag kann nicht gelöscht werden, weil er Geräten zugewiesen ist.' });
   }
 
   return res.status(500).json({ error: messages.generic });
@@ -71,7 +71,7 @@ router.post('/categories', requireAuth, requireActivated, requireEditor, async (
 
 router.patch('/categories/:id', requireAuth, requireActivated, requireEditor, async (req, res) => {
   const id = parseId(req.params.id);
-  if (!id) return res.status(400).json({ error: 'Ung\u00fcltige Kategorien-ID.' });
+  if (!id) return res.status(400).json({ error: 'Ungültige Kategorien-ID.' });
 
   const name = req.body && Object.prototype.hasOwnProperty.call(req.body, 'name')
     ? normalizeText(req.body.name)
@@ -81,7 +81,7 @@ router.patch('/categories/:id', requireAuth, requireActivated, requireEditor, as
     : undefined;
 
   if (name === undefined && description === undefined) {
-    return res.status(400).json({ error: 'Es wurden keine Felder zum Aktualisieren \u00fcbergeben.' });
+    return res.status(400).json({ error: 'Es wurden keine Felder zum Aktualisieren übergeben.' });
   }
 
   try {
@@ -102,7 +102,7 @@ router.patch('/categories/:id', requireAuth, requireActivated, requireEditor, as
 
 router.delete('/categories/:id', requireAuth, requireActivated, requireAdmin, async (req, res) => {
   const id = parseId(req.params.id);
-  if (!id) return res.status(400).json({ error: 'Ung\u00fcltige Kategorien-ID.' });
+  if (!id) return res.status(400).json({ error: 'Ungültige Kategorien-ID.' });
 
   try {
     const { rowCount } = await pool.query('DELETE FROM categories WHERE id = $1', [id]);
@@ -112,7 +112,7 @@ router.delete('/categories/:id', requireAuth, requireActivated, requireAdmin, as
     console.error('[DB ERROR] DELETE /categories/:id', error);
     return handleLookupMutationError(error, res, {
       duplicate: 'Die Kategorie existiert bereits.',
-      generic: 'Die Kategorie konnte nicht gel\u00f6scht werden.'
+      generic: 'Die Kategorie konnte nicht gelöscht werden.'
     });
   }
 });
@@ -146,7 +146,7 @@ router.post('/statuses', requireAuth, requireActivated, requireEditor, async (re
 
 router.patch('/statuses/:id', requireAuth, requireActivated, requireEditor, async (req, res) => {
   const id = parseId(req.params.id);
-  if (!id) return res.status(400).json({ error: 'Ung\u00fcltige Status-ID.' });
+  if (!id) return res.status(400).json({ error: 'Ungültige Status-ID.' });
 
   const name = req.body && Object.prototype.hasOwnProperty.call(req.body, 'name')
     ? normalizeText(req.body.name)
@@ -156,7 +156,7 @@ router.patch('/statuses/:id', requireAuth, requireActivated, requireEditor, asyn
     : undefined;
 
   if (name === undefined && description === undefined) {
-    return res.status(400).json({ error: 'Es wurden keine Felder zum Aktualisieren \u00fcbergeben.' });
+    return res.status(400).json({ error: 'Es wurden keine Felder zum Aktualisieren übergeben.' });
   }
 
   try {
@@ -177,7 +177,7 @@ router.patch('/statuses/:id', requireAuth, requireActivated, requireEditor, asyn
 
 router.delete('/statuses/:id', requireAuth, requireActivated, requireAdmin, async (req, res) => {
   const id = parseId(req.params.id);
-  if (!id) return res.status(400).json({ error: 'Ung\u00fcltige Status-ID.' });
+  if (!id) return res.status(400).json({ error: 'Ungültige Status-ID.' });
 
   try {
     const { rowCount } = await pool.query('DELETE FROM statuses WHERE id = $1', [id]);
@@ -187,7 +187,7 @@ router.delete('/statuses/:id', requireAuth, requireActivated, requireAdmin, asyn
     console.error('[DB ERROR] DELETE /statuses/:id', error);
     return handleLookupMutationError(error, res, {
       duplicate: 'Der Status existiert bereits.',
-      generic: 'Der Status konnte nicht gel\u00f6scht werden.'
+      generic: 'Der Status konnte nicht gelöscht werden.'
     });
   }
 });
@@ -229,7 +229,7 @@ router.post('/locations', requireAuth, requireActivated, requireEditor, async (r
 
 router.patch('/locations/:id', requireAuth, requireActivated, requireEditor, async (req, res) => {
   const id = parseId(req.params.id);
-  if (!id) return res.status(400).json({ error: 'Ung\u00fcltige Standort-ID.' });
+  if (!id) return res.status(400).json({ error: 'Ungültige Standort-ID.' });
 
   const city = req.body && Object.prototype.hasOwnProperty.call(req.body, 'city')
     ? normalizeText(req.body.city)
@@ -245,7 +245,7 @@ router.patch('/locations/:id', requireAuth, requireActivated, requireEditor, asy
     : undefined;
 
   if (city === undefined && address === undefined && houseNumber === undefined && room === undefined) {
-    return res.status(400).json({ error: 'Es wurden keine Felder zum Aktualisieren \u00fcbergeben.' });
+    return res.status(400).json({ error: 'Es wurden keine Felder zum Aktualisieren übergeben.' });
   }
 
   try {
@@ -266,7 +266,7 @@ router.patch('/locations/:id', requireAuth, requireActivated, requireEditor, asy
 
 router.delete('/locations/:id', requireAuth, requireActivated, requireAdmin, async (req, res) => {
   const id = parseId(req.params.id);
-  if (!id) return res.status(400).json({ error: 'Ung\u00fcltige Standort-ID.' });
+  if (!id) return res.status(400).json({ error: 'Ungültige Standort-ID.' });
 
   try {
     const { rowCount } = await pool.query('DELETE FROM locations WHERE id = $1', [id]);
@@ -276,7 +276,7 @@ router.delete('/locations/:id', requireAuth, requireActivated, requireAdmin, asy
     console.error('[DB ERROR] DELETE /locations/:id', error);
     return handleLookupMutationError(error, res, {
       duplicate: 'Der Standort existiert bereits.',
-      generic: 'Der Standort konnte nicht gel\u00f6scht werden.'
+      generic: 'Der Standort konnte nicht gelöscht werden.'
     });
   }
 });
@@ -325,14 +325,14 @@ router.post('/network-environments', requireAuth, requireActivated, requireEdito
 
 router.patch('/network-environments/:id', requireAuth, requireActivated, requireEditor, async (req, res) => {
   const id = parseId(req.params.id);
-  if (!id) return res.status(400).json({ error: 'Ung\u00fcltige Netzwerkumgebungs-ID.' });
+  if (!id) return res.status(400).json({ error: 'Ungültige Netzwerkumgebungs-ID.' });
 
   const name = req.body && Object.prototype.hasOwnProperty.call(req.body, 'name')
     ? normalizeText(req.body.name)
     : undefined;
 
   if (name === undefined) {
-    return res.status(400).json({ error: 'Es wurden keine Felder zum Aktualisieren \u00fcbergeben.' });
+    return res.status(400).json({ error: 'Es wurden keine Felder zum Aktualisieren übergeben.' });
   }
 
   try {
@@ -353,7 +353,7 @@ router.patch('/network-environments/:id', requireAuth, requireActivated, require
 
 router.delete('/network-environments/:id', requireAuth, requireActivated, requireAdmin, async (req, res) => {
   const id = parseId(req.params.id);
-  if (!id) return res.status(400).json({ error: 'Ung\u00fcltige Netzwerkumgebungs-ID.' });
+  if (!id) return res.status(400).json({ error: 'Ungültige Netzwerkumgebungs-ID.' });
 
   try {
     const { rowCount } = await pool.query('DELETE FROM network_environments WHERE id = $1', [id]);
@@ -363,7 +363,7 @@ router.delete('/network-environments/:id', requireAuth, requireActivated, requir
     console.error('[DB ERROR] DELETE /network-environments/:id', error);
     return handleLookupMutationError(error, res, {
       duplicate: 'Die Netzwerkumgebung existiert bereits.',
-      generic: 'Die Netzwerkumgebung konnte nicht gel\u00f6scht werden.'
+      generic: 'Die Netzwerkumgebung konnte nicht gelöscht werden.'
     });
   }
 });

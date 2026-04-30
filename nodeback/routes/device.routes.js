@@ -654,7 +654,7 @@ router.post('/devices', requireAuth, requireActivated, requireEditor, async (req
 
 router.patch('/devices/:id', requireAuth, requireActivated, requireEditor, async (req, res) => {
   const id = toInt(req.params.id);
-  if (!id) return res.status(400).json({ error: 'Ung\u00fcltige Ger\u00e4te-ID.' });
+  if (!id) return res.status(400).json({ error: 'Ungültige Geräte-ID.' });
 
   const body = req.body || {};
   let derivedDepreciationId;
@@ -820,7 +820,7 @@ router.patch('/devices/:id', requireAuth, requireActivated, requireEditor, async
 
 router.delete('/devices/:id', requireAuth, requireActivated, requireEditor, async (req, res) => {
   const id = toInt(req.params.id);
-  if (!id) return res.status(400).json({ error: 'Ung\u00fcltige Ger\u00e4te-ID.' });
+  if (!id) return res.status(400).json({ error: 'Ungültige Geräte-ID.' });
 
   const client = await pool.connect();
 
@@ -949,7 +949,7 @@ router.post('/devices/:id/electronic-tests', requireAuth, requireActivated, requ
 
     if (deviceResult.rows.length === 0) {
       await client.query('ROLLBACK');
-      return res.status(404).json({ error: 'Das Ger\u00e4t konnte nicht gefunden werden.' });
+      return res.status(404).json({ error: 'Das Gerät konnte nicht gefunden werden.' });
     }
 
     const { rows } = await client.query(
@@ -1157,7 +1157,7 @@ router.delete('/electronic-tests/:testId', requireAuth, requireActivated, requir
       'DELETE FROM electronic_tests WHERE id = $1',
       [testId]
     );
-    if (rowCount === 0) return res.status(404).json({ error: 'Die Pr\u00fcfung konnte nicht gefunden werden.' });
+    if (rowCount === 0) return res.status(404).json({ error: 'Die Prüfung konnte nicht gefunden werden.' });
     return res.json({ deleted: true });
   } catch (error) {
     console.error('[DB ERROR] DELETE /electronic-tests/:testId', error);

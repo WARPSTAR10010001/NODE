@@ -36,7 +36,7 @@ app.use(cookieParser());
 
 app.use((error, _req, res, next) => {
   if (error instanceof SyntaxError && error.status === 400 && 'body' in error) {
-    return res.status(400).json({ error: 'JSON-Body ist ungueltig.' });
+    return res.status(400).json({ error: 'JSON-Body ist ungültig.' });
   }
 
   return next(error);
